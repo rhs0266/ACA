@@ -1,5 +1,6 @@
 #include <vector>
 #include <string.h>
+#include <iostream>
 #include "library_set.h"
 
 #define Xposition 0x01
@@ -26,7 +27,7 @@ struct JOINT
 	OFFSET size;					// volume size
     unsigned int num_channels = 0;  // num of channels joint has
     short* channels_order = NULL;   // ordered list of channels
-    std::vector<JOINT*> children;   // joint's children
+    vector<JOINT*> children;   // joint's children
     Matrix4d matrix;               // local transofrmation matrix (premultiplied with parents'
     unsigned int channel_start = 0; // index of joint's channel data in motion array
 
@@ -66,6 +67,224 @@ Matrix4d makeMatrix(double x_rot, double y_rot, double z_rot){
 Matrix4d idMatrix4d;
 HIERARCHY hierarchy;
 
+class Bvh{
+	JOINT* loadJoint(istream& stream, JOINT* parent = NULL);
+	void loadHierarchy(istream& stream);
+	void loadMotion(istream& stream);
+public:
+	Bvh();
+	~Bvh();
+
+	//loading
+	void load(const std:string& filename);
+
+	/** Loads motion data from a frame into local matrices **/
+	void moveTo(unsigned frame);
+
+	const JOINT* getRootJoint() const { return rootJoint; }
+	unsigned getNumFrames() const { return motionData.numframes; }
+private:
+	JOINT* rootJoint;
+	MOTION motionData;
+};
+
+void Bvh::load(const string& filename){
+	fstream file;
+	file.open(filename.c_str(), ios_base::in);
+
+	if (file.is_open()){
+		string line;
+		while (file.good()){
+			file >> line;
+			if (trim(line) == "Hierarchy")
+				loadHierarchy(file);
+			break;
+		}
+		file.close();
+	}
+}
+
+void Bvh::loadHierarchy(istream& stream){
+	string tmp;
+	while (stream.good()){
+		stream >> tmp;
+		if (trim(tmp)=="ROOT")
+			rootJoint = loadJoint(stream);
+		else if (trim(tmp)=="MOTION")
+			loadMotion(stream);
+	}
+}
+
+JOINT* Bvh::loadJoint(istream& stream, JOINT* parent){
+	JOINT* joint = new JOINT;
+	joint->parent = parent;
+
+	// load joint name
+	string* name = new string;
+	stream >> *name;
+	joint->name = name->c_str();
+
+	string tmp;
+	//setting local matrix to identity
+	joint->matrix = glm::mat4(1.0);
+
+	static int _channel_start=0;
+	unsigned channel_order_index = 0;
+
+	while (stream.good()){
+		stream >> tmp;
+		tmp=trim(tmp);
+
+		//loading channels
+		char c = tmp.at(0);
+		if (c=='X' || c=='Y' || c=='Z'){
+			if (tmp=="Xposition")
+				joint->channels_order[channel_order_index++]=Xposition;
+			if (tmp=="Yposition")
+				joint->channels_order[channel_order_index++]=Yposition;
+			if (tmp=="Zposition")
+				joint->channels_order[channel_order_index++]=Zposition;
+
+			if (tmp=="Xrotation")
+				joint->channels_order[channel_order_index++]=Xrotation;
+			if (tmp=="Yrotation")
+				joint->channels_order[channel_order_index++]=Yrotation;
+			if (tmp=="Zrotation")
+				joint->channels_order[channel_order_index++]=Zrotation;
+		}
+
+		if (tmp=="OFFSET"){
+			stream >> joint->offset.x >> joint->offset.y >> joint->offset.z;
+		}
+		else if (tmp=="CHANNELS"){
+			stream >> joint->num_channels;
+			motionData.num_motion_channels += joint->num_channels;
+
+			joint->channel_start = _channel_start;
+			_channel_start += joint->num_channels;
+
+			joint->channels_order = new short[joint->num_channels];
+
+		}
+		else if (tmp=="JOINT"){
+			JOINT* tmp_joint = loadJoint(stream, joint);
+
+			tmp_joint->parent = joint;
+			joint->children.push_back(tmp_joint);
+		}
+		else if (tmp=="End"){
+			stream >> tmp >> tmp; // Site{
+		
+			Joint* tmp_joint = new JOINT;
+
+			tmp_joint->parent = joint;
+			tmp_joint->num_channels = 0;
+			tmp_joint->name = "EndSite";
+			joint->children.push_back(tmp_joint);
+			stream >> tmp;
+			if (tmp=="OFFSET")
+				stream >> tmp_joint->offset.x >> tmp_joint->offset.y >> tmp_joint->offset.z;
+				stream >> tmp;
+		}
+		else if (tmp=="}")
+			return joint;
+	}
+}
+
+void Bvh::loadMotion(istream& stream){
+	string tmp;
+	while (stream.good()){
+		stream>>tmp;
+		if (trim(tmp)=="Frames:")
+			stream >> motionData.num_frames;
+		else if (trim(tmp) == "Frame"){
+			float frame_time;
+			stream >> tmp >> frame_time;
+
+			int num_frames = motionData.num_frames;
+			int num_channels = motionData.num_motion_channels;
+
+			//creating motion data array
+			motionData.data = new float[num_frames * num_channels];
+
+			for (int frame=0;frame<num_frames;frame++){
+				for (int channel=0;channel<num_channels;channel++){
+					float x;
+					stringstream ss;
+					stream tmp; ss<<tmp; ss>>x;
+					int index = frame+num_channels + channel;
+					motionData.data[index]=x;
+				}
+			}
+		}
+	}
+}
+
+static void moveJoint(Joint* joint, MOTION* motionData, int frame_starts_index){
+	int start_index = frame_starts_index + joint->channel_start;
+	joint->matrix = glm::stranslate(glm::mat4(1.0), glm::vec3(joint->offset.x, joint->offset.y, joint->offset.z));
+
+	for (int i=0;i<joint->num_channels;i++){
+		const short& channel = joint->channels_order[i];
+		float value = motionData->data[start_index+i];
+		if (channel&Xposition)
+			joint->matrix=glm::translate(joint->matrix, glm::vec3(value,0,0));
+		if (channel&Yposition)
+			joint->matrix=glm::translate(joint->matrix, glm::vec3(0,value,0));
+		if (channel&Zposition)
+			joint->matrix=glm::translate(joint->matrix, glm::vec3(0,0,value));
+
+		if (channel&Xrotation)
+			joint->matrix=glm::rotate(joint->matrix, value, glm::vec3(1,0,0));
+		if (channel&Yrotation)
+			joint->matrix=glm::rotate(joint->matrix, value, glm::vec3(0,1,0));
+		if (channel&Zrotation)
+			joint->matrix=glm::rotate(joint->matrix, value, glm::vec3(0,0,1));
+
+		if (joint->parent!=NULL)
+			joint->matrix = joint->parent->matrix * joint->matrix;
+
+		for (auto& child : joint->children)
+			moveJoint(child,motionData,frame_starts_index);
+}
+
+void Bvh::moveTo(unsigned frame){
+	unsigned start_index = frame * motionData.num_motion_channels;
+	moveJoint(rootJoint, &motionData, start_index);
+}
+
+vector<glm::vec4> vertices;
+vector<GLshort> indices;
+
+GLuint bvhVAO;
+GLuint bvhVBO;
+Bvh *bvh = NULL;
+
+void bvh_to_vertices(JOINT*					joint,
+					 vector<glm::vec4>&		vertices,
+					 vector<GLshort>&		indices,
+					 GLshort				parentIndex = 0){
+	glm::vec4 translatedVertex = joint->matrix[3];
+	vertices.push_back(translatedVertex);
+	GLshort myindex = vertices.size()-1;
+	if (parentIndex != myindex){
+		indices.push_back(parentIndex);
+		indices.push_back(myindex);
+	}
+	for (auto& child: joint->children)
+		bvh_to_vertices(child, vertices, indices, myindex);
+}
+
+void bvh_load_upload(int frame=1){
+	if (bvh==NULL){
+		bvh=new Bvh;
+		bvh->load("file.bvh");
+	}
+	bvh->moveTo(frame);
+	JOINT* rootJoint = (JOINT*) bvh->getRootJoint();
+	bvh_to_vertices(rootJoint, vertices, indices);
+}
+
 void setting(){
 	float width=10.0;
 	JOINT* set;
@@ -75,6 +294,7 @@ void setting(){
 	set->name="hip";
 	set->parent=NULL;
 	set->offset=OFFSET(0,0,0);
+
 	set->size=OFFSET(0,0,0);
 	set->rotation=OFFSET(0,0,0);
 	{
