@@ -370,7 +370,7 @@ void drawing(const JOINT* joint){
 			glRotatef(bvh->motionData.data[motionDataIndex + i], 0.0, 0.0, 1.0);
 	}
 	{
-		drawCube(OFFSET(2.0,2.0,2.0));
+		drawCube(OFFSET(1.0,1.0,1.0));
 	}
 	motionDataIndex += joint->num_channels;
 	for (auto &child : joint->children){

@@ -37,7 +37,7 @@ matrix rot_mat;
 quater Tot;
 
 /* vectors that makes the rotation and translation of the cube */
-position eye = position(0.0f, 0.0f, 500.0f);
+position eye = position(0.0f, 0.0f, 300.0f);
 position ori = position(0.0f, 0.0f, 0.0f);
 float rot[3] = { 0.0f, 0.0f, 0.0f };
 
