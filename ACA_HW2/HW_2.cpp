@@ -24,7 +24,7 @@ bool rightButton = false;
 bool seekFlag;
 GLfloat mousePosX, mousePosY;
 float r;
-float Near = 5.0f, Far = 700.0f;
+float Near = 5.0f, Far = 1000.0f;
 float trackballRadius;// = 80.0f;
 float buf[701][701];
 double fov = 45.0;
@@ -46,7 +46,7 @@ void loadGlobalCoord()
     glLoadIdentity();
     position eye_new, ori_new, up_new;
     eye_new = calc_rotate(Tot,eye) + translate;
-    ori_new = translate;
+    ori_new = ori + translate;
     up_new = calc_rotate(Tot, position(0,1,0));
     gluLookAt(eye_new.p[0], eye_new.p[1], eye_new.p[2], ori_new.p[0], ori_new.p[1], ori_new.p[2], up_new.p[0], up_new.p[1], up_new.p[2]);
 
@@ -341,6 +341,8 @@ int main(int argc, char **argv) {
     ManualPrint();
 	if (argc>=2){
     	bvh_load_upload(argv[1], 1);
+		eye=getEyePosition();
+		ori=eye-position(0,0,500);
     }
 	//setting();
     glutInit(&argc, argv);

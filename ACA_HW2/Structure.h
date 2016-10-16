@@ -346,30 +346,75 @@ OFFSET TrifuncSpline(OFFSET s,float dt){
 	//return OFFSET(0.0,e.y*dt+s.y*(1.0-dt),s.z*dt+e.z*(1.0-dt));
 }
 int motionDataIndex;
+
+Matrix4f getTranslateMatrix(float x, float y, float z){
+	Matrix4f X;
+	X << 1, 0, 0, x,
+		 0, 1, 0, y,
+		 0, 0, 1, z,
+		 0, 0, 0, 1;
+	return X;
+}
+
+Matrix4f getRotateMatrix(float x, int axis){
+	Matrix4f X;
+	x = - x * PI / 180.0;
+	if (axis==0){
+		X << 1, 0, 0, 0,
+			 0, cos(x), -sin(x), 0,
+			 0, sin(x), cos(x), 0,
+			 0, 0, 0, 1;
+	}
+	if (axis==1){
+		X << cos(x), 0, sin(x), 0,
+			 0, 1, 0, 0,
+			 -sin(x), 0, cos(x), 0,
+			 0, 0, 0, 1;
+	}
+	if (axis==2){
+		X << cos(x), -sin(x), 0, 0,
+			 sin(x), cos(x), 0, 0,
+		 	 0, 0, 1 ,0,
+			 0, 0, 0, 1;
+	}
+	return X;
+}
+
 void drawing(const JOINT* joint){
 	glPushMatrix();
+	if (joint != bvh->getRootJoint()){
+		glBegin(GL_LINE_STRIP);
+		V3(0,0,0);
+		V3(joint->offset.x, joint->offset.y, joint->offset.z);
+		glEnd(); 
+	}
 
-	//printf("name : %s\nnum_channels = %d\n",joint->name,joint->num_channels);
-	//printf("%.5f %.5f %.5f\n",joint->offset.x, joint->offset.y, joint->offset.z);
+
 	glTranslatef(joint->offset.x, joint->offset.y, joint->offset.z);
-	
+
 	for (int i=0;i<joint->num_channels;i++){
 		int channel = (int)joint->channels_order[i];
-		if (channel == Xposition)
+		if (channel == Xposition){
 			glTranslatef(bvh->motionData.data[motionDataIndex + i],0,0);
-		if (channel == Yposition)
+		}
+		if (channel == Yposition){
 			glTranslatef(0,bvh->motionData.data[motionDataIndex + i],0);
-		if (channel == Zposition)
+		}
+		if (channel == Zposition){
 			glTranslatef(0,0,bvh->motionData.data[motionDataIndex + i]);
+		}
 
-		if (channel == Xrotation)
+		if (channel == Xrotation){
 			glRotatef(bvh->motionData.data[motionDataIndex + i], 1.0, 0.0, 0.0);
-		if (channel == Yrotation)
+		}
+		if (channel == Yrotation){
 			glRotatef(bvh->motionData.data[motionDataIndex + i], 0.0, 1.0, 0.0);
-		if (channel == Zrotation)
+		}
+		if (channel == Zrotation){
 			glRotatef(bvh->motionData.data[motionDataIndex + i], 0.0, 0.0, 1.0);
+		}
 	}
-	{
+	{	
 		drawCube(OFFSET(2.0,2.0,2.0));
 	}
 	motionDataIndex += joint->num_channels;
@@ -394,4 +439,6 @@ void draw(int idx){
 		drawing(bvh->getRootJoint());
 	}
 }
-
+position getEyePosition(){
+	return position(bvh->motionData.data[0],bvh->motionData.data[1],bvh->motionData.data[2]+500.0);
+}
