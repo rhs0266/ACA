@@ -3,12 +3,12 @@
 #include <iostream>
 #include "library_set.h"
 
-#define Xposition 0x01
-#define Yposition 0x02
-#define Zposition 0x04
-#define Zrotation 0x10
-#define Xrotation 0x20
-#define Yrotation 0x40
+#define Xposition (1<<0)
+#define Yposition (1<<1)
+#define Zposition (1<<2)
+#define Zrotation (1<<3)
+#define Xrotation (1<<4)
+#define Yrotation (1<<5)
     
 struct OFFSET
 {
@@ -118,13 +118,11 @@ JOINT* Bvh::loadJoint(istream& stream, JOINT* parent){
 	JOINT* joint = new JOINT;
 	joint->parent = parent;
 
-	// load joint name
 	string* name = new string;
 	stream >> *name;
 	joint->name = name->c_str();
 
 	string tmp;
-	//setting local matrix to identity
 	joint->matrix = Matrix4f::Identity(4,4);
 
 	static int _channel_start=0;
@@ -220,59 +218,6 @@ void Bvh::loadMotion(istream& stream){
 		}
 	}
 }
-/*
-static void moveJoint(JOINT* joint, MOTION* motionData, int frame_starts_index){
-	int start_index = frame_starts_index + joint->channel_start;
-	joint->matrix = glm::translate(glm::mat4(1.0), glm::vec3(joint->offset.x, joint->offset.y, joint->offset.z));
-
-	for (int i=0;i<joint->num_channels;i++){
-		const short& channel = joint->channels_order[i];
-		float value = motionData->data[start_index+i];
-		if (channel&Xposition)
-			joint->matrix=glm::translate(joint->matrix, glm::vec3(value,0,0));
-		if (channel&Yposition)
-			joint->matrix=glm::translate(joint->matrix, glm::vec3(0,value,0));
-		if (channel&Zposition)
-			joint->matrix=glm::translate(joint->matrix, glm::vec3(0,0,value));
-
-		if (channel&Xrotation)
-			joint->matrix=glm::rotate(joint->matrix, value, glm::vec3(1,0,0));
-		if (channel&Yrotation)
-			joint->matrix=glm::rotate(joint->matrix, value, glm::vec3(0,1,0));
-		if (channel&Zrotation)
-			joint->matrix=glm::rotate(joint->matrix, value, glm::vec3(0,0,1));
-
-		if (joint->parent!=NULL)
-			joint->matrix = joint->parent->matrix * joint->matrix;
-
-		for (auto& child : joint->children)
-			moveJoint(child,motionData,frame_starts_index);
-}*/
-
-/*void Bvh::moveTo(unsigned frame){
-	unsigned start_index = frame * motionData.num_motion_channels;
-	moveJoint(rootJoint, &motionData, start_index);
-}*/
-/*
-vector<glm::vec4> vertices;
-vector<GLshort> indices;
-
-
-void bvh_to_vertices(JOINT*					joint,
-					 vector<glm::vec4>&		vertices,
-					 vector<GLshort>&		indices,
-					 GLshort				parentIndex = 0){
-	glm::vec4 translatedVertex = joint->matrix[3];
-	vertices.push_back(translatedVertex);
-	GLshort myindex = vertices.size()-1;
-	if (parentIndex != myindex){
-		indices.push_back(parentIndex);
-		indices.push_back(myindex);
-	}
-	for (auto& child: joint->children)
-		bvh_to_vertices(child, vertices, indices, myindex);
-}
-*/
 Bvh *bvh = NULL;
 GLuint bvhVAO;
 GLuint bvhVBO;
@@ -281,9 +226,6 @@ void bvh_load_upload(char *bvhFileName, int frame=1){
 		bvh=new Bvh;
 		bvh->load(bvhFileName);
 	}
-	/*bvh->moveTo(frame);
-	JOINT* rootJoint = (JOINT*) bvh->getRootJoint();
-	bvh_to_vertices(rootJoint, vertices, indices);*/
 }
 
 #define V3(x,y,z) glVertex3f(x,y,z)
@@ -336,49 +278,7 @@ void drawCube(OFFSET size){
 
 
 }
-
-OFFSET LinearSpline(OFFSET s, OFFSET e, float dt){
-	return OFFSET(s.x*(1.0-dt)+e.x*dt,s.y*(1.0-dt)+e.y*dt,s.z*(1.0-dt)+e.z*dt);
-}
-
-OFFSET TrifuncSpline(OFFSET s,float dt){
-	float angle=dt*2*PI;
-	//return OFFSET(0.0,e.y*dt+s.y*(1.0-dt),s.z*dt+e.z*(1.0-dt));
-}
 int motionDataIndex;
-
-Matrix4f getTranslateMatrix(float x, float y, float z){
-	Matrix4f X;
-	X << 1, 0, 0, x,
-		 0, 1, 0, y,
-		 0, 0, 1, z,
-		 0, 0, 0, 1;
-	return X;
-}
-
-Matrix4f getRotateMatrix(float x, int axis){
-	Matrix4f X;
-	x = - x * PI / 180.0;
-	if (axis==0){
-		X << 1, 0, 0, 0,
-			 0, cos(x), -sin(x), 0,
-			 0, sin(x), cos(x), 0,
-			 0, 0, 0, 1;
-	}
-	if (axis==1){
-		X << cos(x), 0, sin(x), 0,
-			 0, 1, 0, 0,
-			 -sin(x), 0, cos(x), 0,
-			 0, 0, 0, 1;
-	}
-	if (axis==2){
-		X << cos(x), -sin(x), 0, 0,
-			 sin(x), cos(x), 0, 0,
-		 	 0, 0, 1 ,0,
-			 0, 0, 0, 1;
-	}
-	return X;
-}
 
 void drawing(const JOINT* joint){
 	glPushMatrix();
@@ -423,19 +323,9 @@ void drawing(const JOINT* joint){
 	}
 	glPopMatrix();
 }
-
-void angleFixation(){
-	JOINT* hip = hierarchy.rootJoint;
-	{
-		JOINT* backbone = hip->children[0];
-		backbone->rotation.x = -10.0*dt, backbone->rotation.y = 0.0, backbone->rotation.z = 0.0;
-	}
-}
 void draw(int idx){
-	//angleFixation();
 	if (bvh!=NULL){
 		motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
-		//printf("%d ",motionDataIndex);
 		drawing(bvh->getRootJoint());
 	}
 }
