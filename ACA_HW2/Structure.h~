@@ -333,8 +333,50 @@ void drawCube(OFFSET size){
 	glBegin(GL_POLYGON);
 		V3(x,0,-z); V3(x,0,z); V3(x,y,z); V3(x,y,-z);
 	glEnd();
+}
 
+void drawLink(OFFSET size){
+    float x=size.x, y=size.y, z=size.z;
 
+	glColor3f(0,0,1);
+	glBegin(GL_LINE_STRIP);
+		V3(-x,-y,0); V3(x,-y,0); V3(x,y,0); V3(-x,y,0);
+	glEnd();
+	glBegin(GL_LINE_STRIP);
+		V3(-x,-y,z); V3(-x,y,z); V3(x,y,z); V3(x,-y,z);
+	glEnd();
+	glBegin(GL_LINE_STRIP);
+		V3(-x,-y,0), V3(-x,-y,z); V3(x,-y,z); V3(x,-y,0);
+	glEnd();	
+	glBegin(GL_LINE_STRIP);
+		V3(-x,y,0), V3(x,y,0); V3(x,y,z); V3(-x,y,z);
+	glEnd();
+	glBegin(GL_LINE_STRIP);
+		V3(-x,-y,0); V3(-x,y,0); V3(-x,y,z); V3(-x,-y,z);
+	glEnd();
+	glBegin(GL_LINE_STRIP);
+		V3(x,-y,0); V3(x,-y,z); V3(x,y,z); V3(x,y,0);
+	glEnd();
+
+	glColor3f(1,1,1);
+	glBegin(GL_POLYGON);
+		V3(-x,-y,0); V3(x,-y,0); V3(x,y,0); V3(-x,y,0);
+	glEnd();
+	glBegin(GL_POLYGON);
+		V3(-x,-y,z); V3(-x,y,z); V3(x,y,z); V3(x,-y,z);
+	glEnd();
+	glBegin(GL_POLYGON);
+		V3(-x,-y,0), V3(-x,-y,z); V3(x,-y,z); V3(x,-y,0);
+	glEnd();	
+	glBegin(GL_POLYGON);
+		V3(-x,y,0), V3(x,y,0); V3(x,y,z); V3(-x,y,z);
+	glEnd();
+	glBegin(GL_POLYGON);
+		V3(-x,-y,0); V3(-x,y,0); V3(-x,y,z); V3(-x,-y,z);
+	glEnd();
+	glBegin(GL_POLYGON);
+		V3(x,-y,0); V3(x,-y,z); V3(x,y,z); V3(x,y,0);
+	glEnd();
 }
 
 OFFSET LinearSpline(OFFSET s, OFFSET e, float dt){
@@ -380,13 +422,54 @@ Matrix4f getRotateMatrix(float x, int axis){
 	return X;
 }
 
+float ABS(float x){ return x>0?x:-x; }
+
 void drawing(const JOINT* joint){
 	glPushMatrix();
 	if (joint != bvh->getRootJoint()){
-		glBegin(GL_LINE_STRIP);
+		/*glBegin(GL_LINE_STRIP);
 		V3(0,0,0);
 		V3(joint->offset.x, joint->offset.y, joint->offset.z);
-		glEnd(); 
+		glEnd(); */
+
+        if (strcmp(joint->name,"EndSite")==0 && (strcmp(joint->parent->name,"head")==0 || strcmp(joint->parent->name,"Head")==0)){
+            glPushMatrix();    
+        	glTranslatef(0, 6, 0);
+            drawLink(OFFSET(5,5,13));
+            glPopMatrix();
+        }
+        else if (strcmp(joint->name,"lhumerus")==0 || strcmp(joint->name,"LeftArm")==0){
+            glPushMatrix();    
+        	glTranslatef(0, joint->offset.y/1.8, -3);
+            drawLink(OFFSET(5,joint->offset.y/2,5));
+            glPopMatrix();
+        }
+        else if (strcmp(joint->name,"rhumerus")==0 || strcmp(joint->name,"RightArm")==0){
+            glPushMatrix();    
+        	glTranslatef(0, joint->offset.y/1.8, -3);
+            drawLink(OFFSET(5,joint->offset.y/2,5));
+            glPopMatrix();
+        }
+        else if (ABS(joint->offset.z) > 0.1){
+            //printf("%.5f %.5f %.5f\n",joint->offset.x,joint->offset.y,joint->offset.z);
+            //drawLink(OFFSET(10,10,max(joint->offset.y,joint->offset.z)));
+            float len=joint->offset.z;
+//            len=len<ABS(joint->offset.x)?ABS(joint->offset.x):len;
+//            len=len<ABS(joint->offset.y)?ABS(joint->offset.y):len;
+            if (strcmp(joint->name,"head")==0 || strcmp(joint->name,"Head")==0){
+                glPushMatrix();    
+            	glTranslatef(0, 3, 0);
+                drawLink(OFFSET(5,8,len));
+                glPopMatrix();
+            }
+            else drawLink(OFFSET(5,5,len));
+        }else if (ABS(joint->offset.x)>0.1){
+            float len=joint->offset.x;
+            drawLink(OFFSET(len/2,5,5));
+        }else if (ABS(joint->offset.y)>0.1){
+            float len=joint->offset.y;
+            drawLink(OFFSET(5,len/2,5));
+        }
 	}
 
 
@@ -415,7 +498,8 @@ void drawing(const JOINT* joint){
 		}
 	}
 	{	
-		drawCube(OFFSET(2.0,2.0,2.0));
+		
+		//drawCube(OFFSET(2.0,2.0,2.0));
 	}
 	motionDataIndex += joint->num_channels;
 	for (auto &child : joint->children){
