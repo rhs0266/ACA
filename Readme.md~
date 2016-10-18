@@ -1,0 +1,2 @@
+# Hello
+g++ -std=c++11 –I ./ HW_1.c –lm –lGL –lGLU –lglut
