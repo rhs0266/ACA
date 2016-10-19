@@ -13,7 +13,7 @@
 using namespace std;
 using namespace Eigen;
 
-int type=0;
+int type=0, drawType=1;
 float PI = acos(-1.0);
 double dt=0.0, alpha=0.02;
 

@@ -45,7 +45,6 @@ typedef struct
     unsigned int num_frames;              // number of frames
     unsigned int num_motion_channels = 0; // number of motion channels 
     float* data = NULL;                   // motion float data array
-    unsigned* joint_channel_offsets;      // number of channels from beggining of hierarchy for i-th joint
 } MOTION;
 
 Matrix4d makeMatrix(double x_rot, double y_rot, double z_rot){
@@ -427,51 +426,54 @@ float ABS(float x){ return x>0?x:-x; }
 void drawing(const JOINT* joint){
 	glPushMatrix();
 	if (joint != bvh->getRootJoint()){
-		/*glBegin(GL_LINE_STRIP);
-		V3(0,0,0);
-		V3(joint->offset.x, joint->offset.y, joint->offset.z);
-		glEnd(); */
+		if (drawType==0){
+			glBegin(GL_LINE_STRIP);
+			V3(0,0,0);
+			V3(joint->offset.x, joint->offset.y, joint->offset.z);
+			glEnd();
+		} 
 
-        if (strcmp(joint->name,"EndSite")==0 && (strcmp(joint->parent->name,"head")==0 || strcmp(joint->parent->name,"Head")==0)){
-            glPushMatrix();    
-        	glTranslatef(0, 6, 0);
-            drawLink(OFFSET(5,5,13));
-            glPopMatrix();
-        }
-        else if (strcmp(joint->name,"lhumerus")==0 || strcmp(joint->name,"LeftArm")==0){
-            glPushMatrix();    
-        	glTranslatef(0, joint->offset.y/1.8, -3);
-            drawLink(OFFSET(5,joint->offset.y/2,5));
-            glPopMatrix();
-        }
-        else if (strcmp(joint->name,"rhumerus")==0 || strcmp(joint->name,"RightArm")==0){
-            glPushMatrix();    
-        	glTranslatef(0, joint->offset.y/1.8, -3);
-            drawLink(OFFSET(5,joint->offset.y/2,5));
-            glPopMatrix();
-        }
-        else if (ABS(joint->offset.z) > 0.1){
-            //printf("%.5f %.5f %.5f\n",joint->offset.x,joint->offset.y,joint->offset.z);
-            //drawLink(OFFSET(10,10,max(joint->offset.y,joint->offset.z)));
-            float len=joint->offset.z;
-//            len=len<ABS(joint->offset.x)?ABS(joint->offset.x):len;
-//            len=len<ABS(joint->offset.y)?ABS(joint->offset.y):len;
-            if (strcmp(joint->name,"head")==0 || strcmp(joint->name,"Head")==0){
-                glPushMatrix();    
-            	glTranslatef(0, 3, 0);
-                drawLink(OFFSET(5,8,len));
-                glPopMatrix();
-            }
-            else drawLink(OFFSET(5,5,len));
-        }else if (ABS(joint->offset.x)>0.1){
-            float len=joint->offset.x;
-            drawLink(OFFSET(len/2,5,5));
-        }else if (ABS(joint->offset.y)>0.1){
-            float len=joint->offset.y;
-            drawLink(OFFSET(5,len/2,5));
-        }
+		else{
+		    if (strcmp(joint->name,"EndSite")==0 && (strcmp(joint->parent->name,"head")==0 || strcmp(joint->parent->name,"Head")==0)){
+		        glPushMatrix();    
+		    	glTranslatef(0, 6, 0);
+		        drawLink(OFFSET(5,5,13));
+		        glPopMatrix();
+		    }
+		    else if (strcmp(joint->name,"lhumerus")==0 || strcmp(joint->name,"LeftArm")==0){
+		        glPushMatrix();    
+		    	glTranslatef(0, joint->offset.y/1.8, -3);
+		        drawLink(OFFSET(5,joint->offset.y/2,5));
+		        glPopMatrix();
+		    }
+		    else if (strcmp(joint->name,"rhumerus")==0 || strcmp(joint->name,"RightArm")==0){
+		        glPushMatrix();    
+		    	glTranslatef(0, joint->offset.y/1.8, -3);
+		        drawLink(OFFSET(5,joint->offset.y/2,5));
+		        glPopMatrix();
+		    }
+		    else if (ABS(joint->offset.z) > 0.1){
+		        //printf("%.5f %.5f %.5f\n",joint->offset.x,joint->offset.y,joint->offset.z);
+		        //drawLink(OFFSET(10,10,max(joint->offset.y,joint->offset.z)));
+		        float len=joint->offset.z;
+	//            len=len<ABS(joint->offset.x)?ABS(joint->offset.x):len;
+	//            len=len<ABS(joint->offset.y)?ABS(joint->offset.y):len;
+		        if (strcmp(joint->name,"head")==0 || strcmp(joint->name,"Head")==0){
+		            glPushMatrix();    
+		        	glTranslatef(0, 3, 0);
+		            drawLink(OFFSET(5,8,len));
+		            glPopMatrix();
+		        }
+		        else drawLink(OFFSET(5,5,len));
+		    }else if (ABS(joint->offset.x)>0.1){
+		        float len=joint->offset.x;
+		        drawLink(OFFSET(len/2,5,5));
+		    }else if (ABS(joint->offset.y)>0.1){
+		        float len=joint->offset.y;
+		        drawLink(OFFSET(5,len/2,5));
+		    }
+		}
 	}
-
 
 	glTranslatef(joint->offset.x, joint->offset.y, joint->offset.z);
 
@@ -496,10 +498,6 @@ void drawing(const JOINT* joint){
 		if (channel == Zrotation){
 			glRotatef(bvh->motionData.data[motionDataIndex + i], 0.0, 0.0, 1.0);
 		}
-	}
-	{	
-		
-		//drawCube(OFFSET(2.0,2.0,2.0));
 	}
 	motionDataIndex += joint->num_channels;
 	for (auto &child : joint->children){

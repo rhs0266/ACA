@@ -237,19 +237,7 @@ void keyboard(unsigned char key, int x, int y) {
         Tot=quater();
         break;
 	case '1': // body, arm bending
-		type=1;
-		//setting();
-		dt=0.0;
-		break;
-	case '2':
-		type=2;
-		//setting();
-		dt=0.0;
-		break;
-	case '3':
-		type=3;
-		//setting();
-		dt=0.0;
+		drawType=1-drawType;
 		break;
     case 'w': // 'w' view up translate
         translate = translate + calc_rotate(Tot, position(0,-0.5,0));
@@ -315,9 +303,7 @@ void Timer(int unused)
 void ManualPrint(){
     fprintf(out,"MANUAL FOR PROGRAM, 2014-16371 Ryu Ho Seok\n");
     fprintf(out,"------------------\n");
-    fprintf(out,"[ 1 ] : body and arms are bending\n");
-    fprintf(out,"[ 2 ] : arms are spining\n");
-    fprintf(out,"[ 3 ] : walking\n");	
+    fprintf(out,"[ 1 ] : shift draw type(volume version, link only version)\n");
     fprintf(out,"------------------\n");
     fprintf(out,"[ a ] : move left\n");
     fprintf(out,"[ s ] : move down\n");
