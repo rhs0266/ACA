@@ -31,24 +31,24 @@ double fov = 45.0;
 char *bvhFileName;
 int frame_idx;
 
-position translate;
-position pv,v;
+Vector3f translate;
+Vector3f pv,v;
 matrix rot_mat;
 quater Tot;
 
 /* vectors that makes the rotation and translation of the cube */
-position eye = position(0.0f, 0.0f, 500.0f);
-position ori = position(0.0f, 0.0f, 0.0f);
+Vector3f eye = Vector3f(0.0f, 0.0f, 500.0f);
+Vector3f ori = Vector3f(0.0f, 0.0f, 0.0f);
 float rot[3] = { 0.0f, 0.0f, 0.0f };
 
 void loadGlobalCoord()
 {
     glLoadIdentity();
-    position eye_new, ori_new, up_new;
+    Vector3f eye_new, ori_new, up_new;
     eye_new = calc_rotate(Tot,eye) + translate;
     ori_new = ori + translate;
-    up_new = calc_rotate(Tot, position(0,1,0));
-    gluLookAt(eye_new.p[0], eye_new.p[1], eye_new.p[2], ori_new.p[0], ori_new.p[1], ori_new.p[2], up_new.p[0], up_new.p[1], up_new.p[2]);
+    up_new = calc_rotate(Tot, Vector3f(0,1,0));
+    gluLookAt(eye_new.p[0], eye_new.p[1], eye_new(2), ori_new.p[0], ori_new.p[1], ori_new(2), up_new.p[0], up_new.p[1], up_new(2));
 
     glMultMatrixd(rotMatrix);
 }
@@ -57,43 +57,43 @@ void loadGlobalCoord()
 //------------------------------------------------------------------------
 // Moves the screen based on mouse pressed button
 //------------------------------------------------------------------------
-position ray(position A, position B, position C, float r){ // A+kB on sphere
-    position a = B;
-    position b = C-A;
-    position p = a * (a%b);
+Vector3f ray(Vector3f A, Vector3f B, Vector3f C, float r){ // A+kB on sphere
+    Vector3f a = B;
+    Vector3f b = C-A;
+    Vector3f p = a * (a%b);
     // a is unit vector
     // p is projection vector of b to a
 
-    float dist_p = norm(p);
-    position e = b - p; // p + e = b
-    float dist_e = norm(e);
+    float dist_p = p.norm();
+    Vector3f e = b - p; // p + e = b
+    float dist_e = e.norm();
     
     if (dist_e >= 0.9999f * r){
-        float max_angle = atan2(r, sqrt(norm(b)*norm(b) - r*r));
-        position axis = b * p;
-        axis = axis / norm(axis);
-        quater Q = quater(cos(max_angle/2), axis.p[0]*sin(max_angle/2), axis.p[1]*sin(max_angle/2), axis.p[2]*sin(max_angle/2));
+        float max_angle = atan2(r, sqrt(b.norm()*b.norm() - r*r));
+        Vector3f axis = b.cross(p);
+        axis = axis / axis.norm();
+        quater Q = quater(cos(max_angle/2), axis*sin(max_angle/2));
         p = calc_rotate(Q,b);
-        p = p / norm(p) * sqrt(norm(b)*norm(b) - r*r);
+        p = p / p.norm() * sqrt(b.norm()*b.norm() - r*r);
     }else{
-        p = p / norm(p) * (norm(p) - sqrt(r*r - norm(e)*norm(e)));
+        p = p / p.norm() * (p.norm() - sqrt(r*r - e.norm()*e.norm()));
     }
     return A+p;
 }
 
-void print(position x, string name){
+void print(Vector3f x, string name){
     cout << name;
-    fprintf(out," = %.3lf, %.3lf, %.3lf\n",x.p[0],x.p[1],x.p[2]);
+    fprintf(out," = %.3lf, %.3lf, %.3lf\n",x(0),x(1),x(2));
 }
 
-position D2toD3(int x,int y){ // return position of intercept b/w cam & cos(center of sphere)
+Vector3f D2toD3(int x,int y){ // return Vector3f of intercept b/w cam & cos(center of sphere)
     x-=width/2; y=height/2-y;
     float camDist = height/2.0 / tan((fov/2.0)*PI/180.0);
-    position vec = position((float)x,(float)y,0.0) - position(0.0,0.0,camDist);
-    vec=vec/norm(vec);
+    Vector3f vec = Vector3f((float)x,(float)y,0.0) - Vector3f(0.0,0.0,camDist);
+    vec=vec/vec.norm();
     vec = calc_rotate(Tot, vec);
 
-    position eye_new, ori_new; 
+    Vector3f eye_new, ori_new; 
     eye_new = calc_rotate(Tot,eye) + translate;
     ori_new = translate;
     return ray(eye_new, vec, ori_new, trackballRadius);
@@ -101,7 +101,7 @@ position D2toD3(int x,int y){ // return position of intercept b/w cam & cos(cent
 
 void glutMotion(int x, int y)
 {
-    trackballRadius = eye.p[2] * 0.4 * (fov/45);
+    trackballRadius = eye(2) * 0.4 * (fov/45);
     pv=D2toD3(mousePosX, mousePosY);
     v =D2toD3(x,y);
     mousePosX = x;
@@ -110,17 +110,17 @@ void glutMotion(int x, int y)
     
     float theta = angle(v, pv);
     if (leftButton){
-        position cross = pv*v;
-        if (norm(cross)<=eps) return;
-        cross = cross/norm(cross);
-        quater Q = quater(cos(theta/2), cross.p[0]*sin(theta/2), cross.p[1]*sin(theta/2), cross.p[2]*sin(theta/2));
+        Vector3f cross = pv.cross(v);
+        if (cross.norm()<=eps) return;
+        cross = cross/cross.norm();
+        quater Q = quater(cos(theta/2), cross*sin(theta/2));
         Q = Q.inverse();
         Tot = Q * Tot;
     }
     return;
 }
 
-position getPointOnPlane(int x,int y){
+Vector3f getPointOnPlane(int x,int y){
     double proj[16],model[16];
     glGetDoublev(GL_PROJECTION_MATRIX, proj);
     glGetDoublev(GL_MODELVIEW_MATRIX, model);
@@ -131,16 +131,16 @@ position getPointOnPlane(int x,int y){
     glReadPixels(winX, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
     winZ/=0.00390619;
     if (winZ>=1-1e-4){ // Pointer doesn't meet object's surface
-        return position(9999,9999,9999);
+        return Vector3f(9999,9999,9999);
     }
     winZ = 2.0*winZ - 1.0;
     winZ = ((-2.0*Far*Near)/(Far-Near)) / (winZ - (Far + Near) / (Far - Near));
     
     int x2=x-width/2, y2=height/2-y;
     float camDist = height/2.0 / tan((fov/2.0)*PI/180.0);
-    position vec = position((float)x2,(float)y2,0.0) - position(0.0,0.0,camDist);
-    vec=vec/norm(vec);
-    vec = vec * (winZ / abs(vec.p[2]));
+    Vector3f vec = Vector3f((float)x2,(float)y2,0.0) - Vector3f(0.0,0.0,camDist);
+    vec=vec/vec.norm();
+    vec = vec * (winZ / abs(vec(2)));
     return eye + vec;
 }
 
@@ -159,9 +159,9 @@ void glutMouse(int button, int state, int x, int y)
                 mousePosX = x;
                 mousePosY = y;
                 leftButton = true;
-                if (seekFlag == true){
+                if (seekFlag){
                     seekFlag = false;
-                    position newCenter = getPointOnPlane(x,y);
+                    Vector3f newCenter = getPointOnPlane(x,y);
                     if (9999-1e-4<=newCenter.p[0] && newCenter.p[0]<=9999+1e-4){
                     }else{
                         translate = translate + calc_rotate(Tot, (newCenter - ori));
@@ -230,10 +230,10 @@ void keyboard(unsigned char key, int x, int y) {
         exit(0);
         break;
     case ' ': // spacebar for re//setting view
-        eye=position(0.0f,0.0f,100.0f);
-        ori=position(0.0f,0.0f,0.0f);
+        eye=Vector3f(0.0f,0.0f,100.0f);
+        ori=Vector3f(0.0f,0.0f,0.0f);
         rot[0]=0.0f; rot[1]=0.0f; rot[2]=0.0f;
-        translate = position(0,0,0);
+        translate = Vector3f(0,0,0);
         fov=45;
         Tot=quater();
         break;
@@ -241,32 +241,32 @@ void keyboard(unsigned char key, int x, int y) {
 		drawType=1-drawType;
 		break;
     case 'w': // 'w' view up translate
-        translate = translate + calc_rotate(Tot, position(0,-0.5,0));
+        translate = translate + calc_rotate(Tot, Vector3f(0,-1,0));
         break;
     case 's': // 's' view down translate
-        translate = translate + calc_rotate(Tot, position(0,+0.5,0));
+        translate = translate + calc_rotate(Tot, Vector3f(0,+1,0));
         break;
     case 'a': // 'a' view left translate
-        translate = translate + calc_rotate(Tot, position(+0.5,0,0));
+        translate = translate + calc_rotate(Tot, Vector3f(+1,0,0));
         break;
     case 'd': // 'd' view right translate
-        translate = translate + calc_rotate(Tot, position(-0.5,0,0));
+        translate = translate + calc_rotate(Tot, Vector3f(-1,0,0));
         break;
     case 'f': // 'f' ready for getting mousepoint for 'seek'
         seekFlag = true;
         break;
     case 'b': // 'b' move camera backward to show all
-        translate = position(0,0,0);
-        eye=position(0.0f,0.0f,30.0f / tan((fov/2)*PI/180.0));
+        translate = Vector3f(0,0,0);
+        eye=Vector3f(0.0f,0.0f,30.0f / tan((fov/2)*PI/180.0));
         //cout << 30.0f / tan((fov/2)*PI/180.0) << "\n";
         break;
     case '[': // '[' view dolly in
-        if (eye.p[2]<=5) break;
-        eye.p[2]-=1;
+        if (eye(2)<=5) break;
+        eye(2)-=1;
         break;
     case ']': // ']' view dolly out
-        if (eye.p[2]>=300) break;
-        eye.p[2]+=1;
+        if (eye(2)>=300) break;
+        eye(2)+=1;
         break;
     case ';': // ';' view zoom in
         if (fov<=5) break;
@@ -328,14 +328,14 @@ int main(int argc, char **argv) {
     ManualPrint();
 	if (argc>=2){
     	bvh_load_upload(argv[1], 1);
-		//eye=getEyePosition();
-		//ori=eye-position(0,0,500);
+		//eye=getEyeVector3f();
+		//ori=eye-Vector3f(0,0,500);
     }
 	setting();
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);
-    glutInitWindowPosition( 50, 0 );
+    glutInitWindowVector3f( 50, 0 );
     glutCreateWindow("Platonic Solid");
 
     glEnable(GL_DEPTH_TEST);

@@ -87,6 +87,9 @@ struct quater{
     quater(float p0, position v){
         p[0]=p0, p[1]=v.p[0], p[2]=v.p[1], p[3]=v.p[2];
     }
+    quater(float p0, Vector3f v){
+        p[0]=p0, p[1]=v(0), p[2]=v(1), p[3]=v(2);
+    }
     quater inverse(){
         return quater(p[0],-p[1],-p[2],-p[3]);
     }
@@ -141,8 +144,13 @@ struct quater{
 quater make_quater(float angle, position axis){
 	return quater(cos(angle/2), axis * sin(angle/2));
 }
-position calc_rotate(quater Q, position _P){
+// position calc_rotate(quater Q, position _P){
+//     quater P = quater(0, _P);
+//     P=(Q*P)*Q.inverse();
+//     return position(P.p[1], P.p[2], P.p[3]);
+// }
+Vector3f calc_rotate(quater Q, Vector3f _P){
     quater P = quater(0, _P);
     P=(Q*P)*Q.inverse();
-    return position(P.p[1], P.p[2], P.p[3]);
+    return Vector3f(P(0),P(1),P(2));
 }

@@ -30,19 +30,19 @@ struct JOINT
 {
     const char* name = NULL;        // joint name
     JOINT* parent = NULL;           // joint parent
-    OFFSET offset;                  // offset data
-	OFFSET size;					// volume size
+    Vector3f offset;                  // offset data
+	Vector3f size;					// volume size
     unsigned int num_channels = 0;  // num of channels joint has
     short* channels_order = NULL;   // ordered list of channels
     vector<JOINT*> children;        // joint's children
     Matrix4f matrix;                // local transofrmation matrix (premultiplied with parents'
     unsigned int channel_start = 0; // index of joint's channel data in motion array
 
-    position coord;
+    Vector3f coord;
     float angle;
     quater q;
 
-	OFFSET rotation;				// rotation information for x, y, z-axis
+	//OFFSET rotation;				// rotation information for x, y, z-axis
 };
 
 typedef struct
@@ -163,7 +163,7 @@ JOINT* Bvh::loadJoint(istream& stream, JOINT* parent){
 		}
 
 		if (tmp=="OFFSET"){
-			stream >> joint->offset.x >> joint->offset.y >> joint->offset.z;
+			stream >> joint->offset(0) >> joint->offset(1) >> joint->offset(2);
 		}
 		else if (tmp=="CHANNELS"){
 			stream >> joint->num_channels;
@@ -192,7 +192,7 @@ JOINT* Bvh::loadJoint(istream& stream, JOINT* parent){
 			joint->children.push_back(tmp_joint);
 			stream >> tmp;
 			if (tmp=="OFFSET")
-				stream >> tmp_joint->offset.x >> tmp_joint->offset.y >> tmp_joint->offset.z;
+				stream >> tmp_joint->offset(0) >> tmp_joint->offset(1) >> tmp_joint->offset(2);
 				stream >> tmp;
 		}
 		else if (tmp=="}")

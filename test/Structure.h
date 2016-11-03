@@ -7,7 +7,7 @@
 
 
 #define V3(x,y,z) glVertex3f(x,y,z)
-#define V3P(P) glVertex3f(P.x, P.y, P.z)
+#define V3P(P) glVertex3f(P(0), P(1), P(2))
 Bvh *bvh = NULL;
 GLuint bvhVAO;
 GLuint bvhVBO;
@@ -17,150 +17,16 @@ void bvh_load_upload(char *bvhFileName, int frame=1){
 		bvh->load(bvhFileName);
 	}
 }
-void drawCube(OFFSET size){
-	float x=size.x/2.0, y=size.y, z=size.z/2.0;
-	//float x=2.0, y=5.0, z=2.0;
-	x-=0.2, y-=0.2, z-=0.2;
 
-	glColor3f(0,0,1);
-	glBegin(GL_LINE_STRIP);
-		V3(-x,0,-z); V3(x,0,-z); V3(x,y,-z); V3(-x,y,-z); V3(-x,0,-z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(-x,0,z); V3(-x,y,z); V3(x,y,z); V3(x,0,z); V3(-x,0,z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(-x,0,-z); V3(-x,0,z); V3(x,0,z); V3(x,0,-z); V3(-x,0,-z);
-	glEnd();	
-	glBegin(GL_LINE_STRIP);
-		V3(-x,y,-z); V3(x,y,-z); V3(x,y,z); V3(-x,y,z); V3(-x,y,-z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(-x,0,-z); V3(-x,y,-z); V3(-x,y,z); V3(-x,0,z); V3(-x,0,-z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(x,0,-z); V3(x,0,z); V3(x,y,z); V3(x,y,-z); V3(x,0,-z);
-	glEnd();
-
-
-
-	glColor3f(1,1,1);
-	glBegin(GL_POLYGON);
-		V3(-x,0,-z); V3(x,0,-z); V3(x,y,-z); V3(-x,y,-z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(-x,0,z); V3(-x,y,z); V3(x,y,z); V3(x,0,z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(-x,0,-z), V3(-x,0,z); V3(x,0,z); V3(x,0,-z);
-	glEnd();	
-	glBegin(GL_POLYGON);
-		V3(-x,y,-z), V3(x,y,-z); V3(x,y,z); V3(-x,y,z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(-x,0,-z); V3(-x,y,-z); V3(-x,y,z); V3(-x,0,z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(x,0,-z); V3(x,0,z); V3(x,y,z); V3(x,y,-z);
-	glEnd();
-}
-
-void drawLink(OFFSET size){
-    float x=size.x, y=size.y, z=size.z;
-
-	glColor3f(0,0,1);
-	glBegin(GL_LINE_STRIP);
-		V3(-x,-y,0); V3(x,-y,0); V3(x,y,0); V3(-x,y,0);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(-x,-y,z); V3(-x,y,z); V3(x,y,z); V3(x,-y,z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(-x,-y,0), V3(-x,-y,z); V3(x,-y,z); V3(x,-y,0);
-	glEnd();	
-	glBegin(GL_LINE_STRIP);
-		V3(-x,y,0), V3(x,y,0); V3(x,y,z); V3(-x,y,z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(-x,-y,0); V3(-x,y,0); V3(-x,y,z); V3(-x,-y,z);
-	glEnd();
-	glBegin(GL_LINE_STRIP);
-		V3(x,-y,0); V3(x,-y,z); V3(x,y,z); V3(x,y,0);
-	glEnd();
-
-	glColor3f(1,1,1);
-	glBegin(GL_POLYGON);
-		V3(-x,-y,0); V3(x,-y,0); V3(x,y,0); V3(-x,y,0);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(-x,-y,z); V3(-x,y,z); V3(x,y,z); V3(x,-y,z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(-x,-y,0), V3(-x,-y,z); V3(x,-y,z); V3(x,-y,0);
-	glEnd();	
-	glBegin(GL_POLYGON);
-		V3(-x,y,0), V3(x,y,0); V3(x,y,z); V3(-x,y,z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(-x,-y,0); V3(-x,y,0); V3(-x,y,z); V3(-x,-y,z);
-	glEnd();
-	glBegin(GL_POLYGON);
-		V3(x,-y,0); V3(x,-y,z); V3(x,y,z); V3(x,y,0);
-	glEnd();
-}
-
-OFFSET LinearSpline(OFFSET s, OFFSET e, float dt){
-	return OFFSET(s.x*(1.0-dt)+e.x*dt,s.y*(1.0-dt)+e.y*dt,s.z*(1.0-dt)+e.z*dt);
-}
-
-OFFSET TrifuncSpline(OFFSET s,float dt){
-	float angle=dt*2*PI;
-	//return OFFSET(0.0,e.y*dt+s.y*(1.0-dt),s.z*dt+e.z*(1.0-dt));
-}
 int motionDataIndex;
-
-Matrix4f getTranslateMatrix(float x, float y, float z){
-	Matrix4f X;
-	X << 1, 0, 0, x,
-		 0, 1, 0, y,
-		 0, 0, 1, z,
-		 0, 0, 0, 1;
-	return X;
-}
-
-Matrix4f getRotateMatrix(float x, int axis){
-	Matrix4f X;
-	x = - x * PI / 180.0;
-	if (axis==0){
-		X << 1, 0, 0, 0,
-			 0, cos(x), -sin(x), 0,
-			 0, sin(x), cos(x), 0,
-			 0, 0, 0, 1;
-	}
-	if (axis==1){
-		X << cos(x), 0, sin(x), 0,
-			 0, 1, 0, 0,
-			 -sin(x), 0, cos(x), 0,
-			 0, 0, 0, 1;
-	}
-	if (axis==2){
-		X << cos(x), -sin(x), 0, 0,
-			 sin(x), cos(x), 0, 0,
-		 	 0, 0, 1 ,0,
-			 0, 0, 0, 1;
-	}
-	return X;
-}
 
 float ABS(float x){ return x>0?x:-x; }
 
-
-
-void drawing(JOINT* joint, quater Q, OFFSET origin){
+void drawing(JOINT* joint, quater Q, Vector3f origin){
     quater Q2 = joint -> q;
     Q2 = Q2 * Q;
-    position afterRot = calc_rotate(Q, position(joint->offset.x, joint->offset.y, joint->offset.z));
-    OFFSET nextOrigin = OFFSET(afterRot.p[0], afterRot.p[1], afterRot.p[2]) + origin;
+    Vector3f afterRot = calc_rotate(Q, joint->offset);
+    Vector3f nextOrigin = afterRot + origin;
 	if (joint != bvh->getRootJoint()){
 		glBegin(GL_LINE_STRIP);
 		V3P(origin);
@@ -174,31 +40,31 @@ void drawing(JOINT* joint, quater Q, OFFSET origin){
 
 #include <stack>
 stack<JOINT *> S;
-void findAndStacking(JOINT *joint, const char *target_name, OFFSET goal){
+void findAndStacking(JOINT *joint, const char *target_name, Vector3f goalP, Vector3f goalQ){
     joint->q = quater();
     if (strcmp(joint->name, target_name)==0){
         // Find target, current stack S are movable joints
-        MatrixXf m(6,S.size());
-        VECTOR v_end = VECTOR(goal - joint->coord);
+        MatrixXf J1(3,S.size());
+        Vector3f v_end = Vector3f(goalP - joint->coord);
         return;
     }
     else{
+    	S.push(joint);
         for (auto &child : joint->children){
-            S.push(child);
             findAndStacking(child, target_name, goal);
-            S.pop();
         }
+        S.pop();
     }
 }
-void moveTarget(const char *joint_name, OFFSET goal){
+void moveTarget(const char *joint_name, Vector3f goalP, quater goalQ){
     
 }
 
 void jointRotationInitiation(JOINT *joint){
     joint -> q = quater();
-    if (joint == bvh->getRootJoint()) joint->coord= position(0,0,0);
-    else joint->coord = joint->parent->coord + position(joint->offset.x, joint->offset.y, joint->offset.z);
-    printf("%s %.5f %.5f %.5f\n",joint->name, joint->coord.p[0], joint->coord.p[1], joint->coord.p[2]);
+    if (joint == bvh->getRootJoint()) joint->coord = Vector3f(0,0,0);
+    else joint->coord = joint->parent->coord + joint->offset;
+    printf("%s %.5f %.5f %.5f\n",joint->name, joint->coord(0), joint->coord(1), joint->coord(2));
     for (auto &child : joint->children){
         jointRotationInitiation(child);
     }
