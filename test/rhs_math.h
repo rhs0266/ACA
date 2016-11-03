@@ -39,9 +39,9 @@ float norm(position &a){
     return sqrt(a.p[0]*a.p[0] + a.p[1]*a.p[1] + a.p[2]*a.p[2]);
 }
 
-float angle(position &pv, position &v){ // return value is radian
-    position cross = pv*v;
-    return atan2(norm(cross)/norm(pv)/norm(v), (pv%v)/norm(pv)/norm(v));
+float angle(Vector3f &pv, Vector3f &v){ // return value is radian
+    Vector3f cross = pv.cross(v);
+    return atan2(cross.norm()/pv.norm()/v.norm(), (pv.dot(v))/pv.norm()/v.norm());
 }
 
 struct matrix{
@@ -88,6 +88,7 @@ struct quater{
         p[0]=p0, p[1]=v.p[0], p[2]=v.p[1], p[3]=v.p[2];
     }
     quater(float p0, Vector3f v){
+        //v = v / v.norm();
         p[0]=p0, p[1]=v(0), p[2]=v(1), p[3]=v(2);
     }
     quater inverse(){
@@ -152,5 +153,5 @@ quater make_quater(float angle, position axis){
 Vector3f calc_rotate(quater Q, Vector3f _P){
     quater P = quater(0, _P);
     P=(Q*P)*Q.inverse();
-    return Vector3f(P(0),P(1),P(2));
+    return Vector3f(P.p[1],P.p[2],P.p[3]);
 }

@@ -48,7 +48,7 @@ void loadGlobalCoord()
     eye_new = calc_rotate(Tot,eye) + translate;
     ori_new = ori + translate;
     up_new = calc_rotate(Tot, Vector3f(0,1,0));
-    gluLookAt(eye_new.p[0], eye_new.p[1], eye_new(2), ori_new.p[0], ori_new.p[1], ori_new(2), up_new.p[0], up_new.p[1], up_new(2));
+    gluLookAt(eye_new(0), eye_new(1), eye_new(2), ori_new(0), ori_new(1), ori_new(2), up_new(0), up_new(1), up_new(2));
 
     glMultMatrixd(rotMatrix);
 }
@@ -60,7 +60,7 @@ void loadGlobalCoord()
 Vector3f ray(Vector3f A, Vector3f B, Vector3f C, float r){ // A+kB on sphere
     Vector3f a = B;
     Vector3f b = C-A;
-    Vector3f p = a * (a%b);
+    Vector3f p = a*a.dot(b);
     // a is unit vector
     // p is projection vector of b to a
 
@@ -162,7 +162,7 @@ void glutMouse(int button, int state, int x, int y)
                 if (seekFlag){
                     seekFlag = false;
                     Vector3f newCenter = getPointOnPlane(x,y);
-                    if (9999-1e-4<=newCenter.p[0] && newCenter.p[0]<=9999+1e-4){
+                    if (9999-1e-4<=newCenter(0) && newCenter(0)<=9999+1e-4){
                     }else{
                         translate = translate + calc_rotate(Tot, (newCenter - ori));
                     }
@@ -203,8 +203,7 @@ void display() {
     glPolygonMode(GL_FRONT,GL_LINE);
     loadGlobalCoord();
 
-
-	//moveTarget("lhand", OFFSET(0,0,30));
+    moveTarget("lhand", Vector3f(0.0,0,0.2));
     draw(frame_idx);
 
     
@@ -332,10 +331,16 @@ int main(int argc, char **argv) {
 		//ori=eye-Vector3f(0,0,500);
     }
 	setting();
+    cout << "eye = \n" << eye << endl;
+    // moveTarget("lhand", Vector3f(1.0,0,1.0));
+    // moveTarget("lhand", Vector3f(1.0,0,1.0));
+    // moveTarget("lhand", Vector3f(1.0,0,1.0));
+    // moveTarget("lhand", Vector3f(1.0,0,1.0));
+    cout << "eye = \n" << eye << endl;
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);
-    glutInitWindowVector3f( 50, 0 );
+    glutInitWindowPosition( 50, 0 );
     glutCreateWindow("Platonic Solid");
 
     glEnable(GL_DEPTH_TEST);

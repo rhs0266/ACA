@@ -22,42 +22,108 @@ int motionDataIndex;
 
 float ABS(float x){ return x>0?x:-x; }
 
-void drawing(JOINT* joint, quater Q, Vector3f origin){
-    quater Q2 = joint -> q;
-    Q2 = Q2 * Q;
-    Vector3f afterRot = calc_rotate(Q, joint->offset);
-    Vector3f nextOrigin = afterRot + origin;
+int tempFlag=0;
+void drawing(JOINT* joint){
 	if (joint != bvh->getRootJoint()){
 		glBegin(GL_LINE_STRIP);
-		V3P(origin);
-		V3P(nextOrigin);
+		V3P(joint->parent->coord);
+		V3P(joint->coord);
 		glEnd();
 	}
 	for (auto &child : joint->children){
-		drawing(child, Q2, nextOrigin);
+		drawing(child);
 	}
 }
 
 #include <stack>
-stack<JOINT *> S;
-void findAndStacking(JOINT *joint, const char *target_name, Vector3f goalP, Vector3f goalQ){
+vector<JOINT *> S;
+bool StackFlag;
+void findAndStacking(JOINT *joint, const char *target_name, Vector3f dP){
     joint->q = quater();
     if (strcmp(joint->name, target_name)==0){
         // Find target, current stack S are movable joints
-        MatrixXf J1(3,S.size());
-        Vector3f v_end = Vector3f(goalP - joint->coord);
+        MatrixXf Jv(3,S.size());
+        Vector3f v_end = Vector3f(dP);
+
+        int i=0;
+        printf("JOINTS LIST : ");
+        for (auto &j : S){
+            printf(" -> %s",j->name);
+            Vector3f p = joint->coord - j->coord;
+            Vector3f w = p.cross(dP);
+            Jv(0,i) = (w.cross(p))(0);
+            Jv(1,i) = (w.cross(p))(1);
+            Jv(2,i) = (w.cross(p))(2);
+            i++;
+        }
+        printf("\n");
+
+        MatrixXf Jvt = Jv.transpose();
+        VectorXf dTheta;
+        if (Jv.rows() <= Jv.cols()){
+            MatrixXf temp = Jv*Jvt;
+            if (temp.determinant() < 1e-5){
+                StackFlag = false;
+                return;
+            }
+            MatrixXf JvInv = Jvt * temp.inverse();
+            dTheta = JvInv * dP;
+            double relative_error = (Jv*dTheta - dP).norm() / dP.norm(); // norm() is L2 norm
+            if (relative_error > 1e-5){
+                printf("WTF, relative error is %f\n",relative_error);
+            }
+        }else{
+            MatrixXf temp = Jvt*Jv;
+            if (temp.determinant() < 1e-5){
+                StackFlag = false;
+                return;
+            }
+            MatrixXf JvInv = temp.inverse() * Jvt;
+            dTheta = JvInv * dP;
+            double relative_error = (Jv*dTheta - dP).norm() / dP.norm(); // norm() is L2 norm
+            if (relative_error > 1e-5){
+                printf("WTF2, relative error is %f\n",relative_error);
+            }
+        }
+        i=0;
+        for (auto &j : S){
+            Vector3f p = joint->coord - j->coord;
+            Vector3f w = p.cross(dP);
+            if (w.norm()>1e-3 && dTheta(i)>1e-3) j->q = quater(cos(dTheta(i)/2.0), w*sin(dTheta(i)/2.0));
+            else j->q = quater();
+            i++;
+        }
+        StackFlag=true;
         return;
     }
     else{
-    	S.push(joint);
+    	S.push_back(joint);
         for (auto &child : joint->children){
-            findAndStacking(child, target_name, goal);
+            findAndStacking(child, target_name, dP);
         }
-        S.pop();
+        S.pop_back();
     }
 }
-void moveTarget(const char *joint_name, Vector3f goalP, quater goalQ){
-    
+
+void reCalculateCoord(JOINT* joint, quater Q){
+    quater Q2 = joint -> q;
+    Q2 = Q2 * Q;
+    Vector3f afterRot = calc_rotate(Q, joint->offset);
+    if (joint!=bvh->getRootJoint()) joint -> coord = joint -> parent -> coord + afterRot;
+    printf("%s %.5f %.5f %.5f\n",joint->name, joint->coord(0), joint->coord(1), joint->coord(2));
+    for (auto &child : joint->children){
+        reCalculateCoord(child, Q2);
+    }
+}
+
+bool moveTarget(const char *joint_name, Vector3f dP){
+    if (dP.norm() < 1e-5) return false;
+    StackFlag = false;
+    printf("\nMOVE TARGET START\n");
+    findAndStacking(bvh->getRootJoint(), joint_name, dP);
+    reCalculateCoord(bvh->getRootJoint(), quater());
+    printf("MOVE TARGET FINISH\n\n");
+    return StackFlag;
 }
 
 void jointRotationInitiation(JOINT *joint){
@@ -71,6 +137,7 @@ void jointRotationInitiation(JOINT *joint){
 }
 void setting(){
     motionDataIndex = 0;
+    printf("@Setting\n");
 	jointRotationInitiation(bvh->getRootJoint());
 }	
 void draw(int idx){
@@ -80,7 +147,7 @@ void draw(int idx){
 	if (bvh!=NULL){
 		motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
 		//printf("%d ",motionDataIndex);
-		drawing(bvh->getRootJoint(),quater(),OFFSET());
+		drawing(bvh->getRootJoint());
 	}
 }
 position getEyePosition(){
