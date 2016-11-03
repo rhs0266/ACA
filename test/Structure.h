@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include <string.h>
 #include <iostream>
@@ -174,10 +175,11 @@ void drawing(JOINT* joint, quater Q, OFFSET origin){
 #include <stack>
 stack<JOINT *> S;
 void findAndStacking(JOINT *joint, const char *target_name, OFFSET goal){
-    joint->quater = quater();
+    joint->q = quater();
     if (strcmp(joint->name, target_name)==0){
         // Find target, current stack S are movable joints
-        
+        MatrixXf m(6,S.size());
+        VECTOR v_end = VECTOR(goal - joint->coord);
         return;
     }
     else{
@@ -194,23 +196,9 @@ void moveTarget(const char *joint_name, OFFSET goal){
 
 void jointRotationInitiation(JOINT *joint){
     joint -> q = quater();
-    /*for (int i=0;i<joint->num_channels;i++){
-		int channel = (int)joint->channels_order[i];
-
-		if (channel == Xrotation){
-			//glRotatef(bvh->motionData.data[motionDataIndex + i], 1.0, 0.0, 0.0);
-            joint -> q = make_quater(bvh->motionData.data[motionDataIndex + i]*3.14/180.0, position(1.0, 0.0, 0.0)) * joint -> q;
-		}
-		if (channel == Yrotation){
-			//glRotatef(bvh->motionData.data[motionDataIndex + i], 0.0, 1.0, 0.0);
-            joint -> q = make_quater(bvh->motionData.data[motionDataIndex + i]*3.14/180.0, position(0.0, 1.0, 0.0)) * joint -> q;
-		}
-		if (channel == Zrotation){
-			//glRotatef(bvh->motionData.data[motionDataIndex + i], 0.0, 0.0, 1.0);
-            joint -> q = make_quater(bvh->motionData.data[motionDataIndex + i]*3.14/180.0, position(0.0, 0.0, 1.0)) * joint -> q;
-		}
-	}
-    motionDataIndex += joint->num_channels;*/
+    if (joint == bvh->getRootJoint()) joint->coord= position(0,0,0);
+    else joint->coord = joint->parent->coord + position(joint->offset.x, joint->offset.y, joint->offset.z);
+    printf("%s %.5f %.5f %.5f\n",joint->name, joint->coord.p[0], joint->coord.p[1], joint->coord.p[2]);
     for (auto &child : joint->children){
         jointRotationInitiation(child);
     }
@@ -231,4 +219,4 @@ void draw(int idx){
 }
 position getEyePosition(){
 	return position(bvh->motionData.data[0],bvh->motionData.data[1],bvh->motionData.data[2]+500.0);
-} 
+}

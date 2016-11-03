@@ -204,7 +204,8 @@ void display() {
     loadGlobalCoord();
 
 
-	moveTarget("lhand", OFFSET(0,0,30));
+	//moveTarget("lhand", OFFSET(0,0,30));
+    draw(frame_idx);
 
     
     glutSwapBuffers();

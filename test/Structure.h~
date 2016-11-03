@@ -177,6 +177,7 @@ void findAndStacking(JOINT *joint, const char *target_name, OFFSET goal){
     joint->quater = quater();
     if (strcmp(joint->name, target_name)==0){
         // Find target, current stack S are movable joints
+        
         return;
     }
     else{

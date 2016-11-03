@@ -1,4 +1,5 @@
-
+#pragma once
+#include "rhs_math.h"
 #define Xposition 0x01
 #define Yposition 0x02
 #define Zposition 0x04
@@ -15,11 +16,15 @@ struct OFFSET
     OFFSET operator+(const OFFSET& rhs){
         return OFFSET(x+rhs.x, y+rhs.y, z+rhs.z);
     }
+    OFFSET operator-(const OFFSET& rhs){
+        return OFFSET(x-rhs.x, y-rhs.y, z-rhs.z);
+    }
 };
 
 typedef struct JOINT JOINT;
 typedef struct OFFSET POINT;
 typedef struct OFFSET AXIS;
+typedef struct OFFSET VECTOR;
 
 struct JOINT
 {
@@ -33,6 +38,7 @@ struct JOINT
     Matrix4f matrix;                // local transofrmation matrix (premultiplied with parents'
     unsigned int channel_start = 0; // index of joint's channel data in motion array
 
+    position coord;
     float angle;
     quater q;
 

@@ -1,4 +1,4 @@
-
+#pragma once
 #include <cmath>
 #include <iostream>
 #define FOR(i,n,m) for (int i=(n);i<=(m);i++)
