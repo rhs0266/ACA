@@ -9,15 +9,15 @@ ROOT pelvis
     CHANNELS 3 Zrotation Xrotation Yrotation
     JOINT ltibia
     {
-      OFFSET 0 0 -41.4872
+      OFFSET 10 0 -35.4872
       CHANNELS 3 Zrotation Xrotation Yrotation
       JOINT lfoot
       {
-        OFFSET 0 0 -39.7538
+        OFFSET -10 0 -32.7538
         CHANNELS 3 Zrotation Xrotation Yrotation
         JOINT ltoes
         {
-          OFFSET 15.4382 0 0
+          OFFSET 10.4382 10 0
           CHANNELS 3 Zrotation Xrotation Yrotation
           End Site
           {
@@ -33,15 +33,15 @@ ROOT pelvis
     CHANNELS 3 Zrotation Xrotation Yrotation
     JOINT rtibia
     {
-      OFFSET 0 0 -41.4872
+      OFFSET 10 0 -35.4872
       CHANNELS 3 Zrotation Xrotation Yrotation
       JOINT rfoot
       {
-        OFFSET 0 0 -39.7538
+        OFFSET -10 0 -32.7538
         CHANNELS 3 Zrotation Xrotation Yrotation
         JOINT rtoes
         {
-          OFFSET 15.4382 0 0
+          OFFSET 10.4382 -10 0
           CHANNELS 3 Zrotation Xrotation Yrotation
           End Site
           {
@@ -74,11 +74,11 @@ ROOT pelvis
         CHANNELS 3 Zrotation Xrotation Yrotation
         JOINT lradius
         {
-          OFFSET 0 0 -26.2788
+          OFFSET 0 5 -24.2788
           CHANNELS 3 Zrotation Xrotation Yrotation
           JOINT lhand
           {
-            OFFSET 0 0 -26.6372
+            OFFSET 0 -5 -20.6372
             CHANNELS 3 Zrotation Xrotation Yrotation
             End Site
             {

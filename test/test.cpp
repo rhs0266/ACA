@@ -203,7 +203,6 @@ void display() {
     glPolygonMode(GL_FRONT,GL_LINE);
     loadGlobalCoord();
 
-    moveTarget("lhand", Vector3f(0.0,0,0.2));
     draw(frame_idx);
 
     
@@ -239,6 +238,10 @@ void keyboard(unsigned char key, int x, int y) {
 	case '1': // body, arm bending
 		drawType=1-drawType;
 		break;
+    case 'm':
+        //moveTarget("pelvis", "ltoes", Vector3f(20.0,12,-60));
+        moveTarget("lhumerus", "lhand", Vector3f(20.0,12,20));
+        break;
     case 'w': // 'w' view up translate
         translate = translate + calc_rotate(Tot, Vector3f(0,-1,0));
         break;
@@ -331,12 +334,10 @@ int main(int argc, char **argv) {
 		//ori=eye-Vector3f(0,0,500);
     }
 	setting();
-    cout << "eye = \n" << eye << endl;
-    // moveTarget("lhand", Vector3f(1.0,0,1.0));
-    // moveTarget("lhand", Vector3f(1.0,0,1.0));
-    // moveTarget("lhand", Vector3f(1.0,0,1.0));
-    // moveTarget("lhand", Vector3f(1.0,0,1.0));
-    cout << "eye = \n" << eye << endl;
+    // moveTarget("pelvis", "ltoes", Vector3f(1.0,0,1.0));
+    // moveTarget("pelvis", "lhand", Vector3f(1.0,0,1.0));
+    // moveTarget("pelvis", "lhand", Vector3f(1.0,0,1.0));
+    // moveTarget("pelvis", "lhand", Vector3f(1.0,0,1.0));
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);

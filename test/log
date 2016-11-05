@@ -1,0 +1,2 @@
+g++ -std=c++11 -I ./ test.cpp -lm -lGL -lGLU -lglut
+makefile:2: recipe for target 'all' failed
