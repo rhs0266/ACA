@@ -6,6 +6,10 @@
 #define Zrotation 0x10
 #define Xrotation 0x20
 #define Yrotation 0x40
+
+#define BallAndSocket 0
+#define Hinge 1
+#define Prismatic 2
     
 struct OFFSET
 {
@@ -30,17 +34,21 @@ struct JOINT
 {
     const char* name = NULL;        // joint name
     JOINT* parent = NULL;           // joint parent
-    Vector3f offset;                  // offset data
-	Vector3f size;					// volume size
+    V3 offset;                  // offset data
+	V3 size;					// volume size
     unsigned int num_channels = 0;  // num of channels joint has
     short* channels_order = NULL;   // ordered list of channels
     vector<JOINT*> children;        // joint's children
     Matrix4f matrix;                // local transofrmation matrix (premultiplied with parents'
     unsigned int channel_start = 0; // index of joint's channel data in motion array
 
-    Vector3f coord;
+    V3 coord;
     float angle;
     quater q;
+
+    int jointType = BallAndSocket;
+    V3 axis;
+    float infimumAngle=-100, supremumAngle=100;
 
 	//OFFSET rotation;				// rotation information for x, y, z-axis
 };

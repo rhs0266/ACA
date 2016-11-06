@@ -6,7 +6,7 @@
 #include "library_set.h"
 
 
-#define V3(x,y,z) glVertex3f(x,y,z)
+#define glV3(x,y,z) glVertex3f(x,y,z)
 #define V3P(P) glVertex3f(P(0), P(1), P(2))
 Bvh *bvh = NULL;
 GLuint bvhVAO;
@@ -24,18 +24,18 @@ float ABS(float x){ return x>0?x:-x; }
 
 int tempFlag=0;
 
-void drawCube(Vector3f p1, Vector3f p2){
+void drawCube(V3 p1, V3 p2){
     float w=3, h=(p2-p1).norm();
     //cout << p1.transpose() << ", " << p2.transpose() << endl;
-    vector<Vector3f> v;
-    v.push_back(Vector3f(-w,-w,0)); v.push_back(Vector3f(-w,w,0)); v.push_back(Vector3f(w,w,0)); v.push_back(Vector3f(w,-w,0));
-    v.push_back(Vector3f(-w,-w,h)); v.push_back(Vector3f(-w,w,h)); v.push_back(Vector3f(w,w,h)); v.push_back(Vector3f(w,-w,h));
-    Vector3f t = p2 - p1; t /= t.norm();
-    Vector3f t2 = t - Vector3f(0,0,1);
-    Vector3f axis;
-    if (Vector3f(0,0,1).cross(t2).norm()>1e-3) axis=Vector3f(0,0,1).cross(t2);
-    else axis=Vector3f(0,0,1);
-    float angle = acos(Vector3f(0,0,1).dot(t));
+    vector<V3> v;
+    v.push_back(V3(-w,-w,0)); v.push_back(V3(-w,w,0)); v.push_back(V3(w,w,0)); v.push_back(V3(w,-w,0));
+    v.push_back(V3(-w,-w,h)); v.push_back(V3(-w,w,h)); v.push_back(V3(w,w,h)); v.push_back(V3(w,-w,h));
+    V3 t = p2 - p1; t /= t.norm();
+    V3 t2 = t - V3(0,0,1);
+    V3 axis;
+    if (V3(0,0,1).cross(t2).norm()>1e-3) axis=V3(0,0,1).cross(t2);
+    else axis=V3(0,0,1);
+    float angle = acos(V3(0,0,1).dot(t));
     // cout << t.transpose() << ", " << t2.transpose() << ", " << (axis/axis.norm()).transpose() << endl;
     // cout << angle << endl;
     quater Q = quater(cos(angle/2), axis/axis.norm()*sin(angle/2));
@@ -83,7 +83,6 @@ void drawing(JOINT* joint){
     		glEnd();
         }
         if (drawType==2){ // volume
-            //if (strcmp(joint->name,"thorax")==0)
             drawCube(joint->parent->coord, joint->coord);
         }
 	}
@@ -94,17 +93,20 @@ void drawing(JOINT* joint){
 
 #include <stack>
 vector<JOINT *> S;
-void JacobianPseudoInv(JOINT *joint, const char *target_name, const Vector3f &dP, JOINT *from){
+void JacobianPseudoInv(JOINT *joint, const char *target_name, const V3 &dP, JOINT *from){
     if (strcmp(joint->name, target_name)==0){
         // Find target, current stack S are movable joints
         MatrixXf Jv(3,S.size());
-        Vector3f v_end = Vector3f(dP);
+        V3 v_end = V3(dP);
 
         int i=0;
         for (auto &j : S){
-            Vector3f p = joint->coord - j->coord;
-            Vector3f w = p.cross(dP);
-            w = w / w.norm();
+            V3 p = joint->coord - j->coord;
+            V3 w = p.cross(dP);
+            if (j->jointType==Hinge){
+                w=j->axis;
+            }
+            if (w.norm() > 1e-3) w = w / w.norm();
             Jv(0,i) = (w.cross(p))(0);
             Jv(1,i) = (w.cross(p))(1);
             Jv(2,i) = (w.cross(p))(2);
@@ -131,14 +133,25 @@ void JacobianPseudoInv(JOINT *joint, const char *target_name, const Vector3f &dP
         }
         i=0;
         for (auto &j : S){
-            Vector3f p = joint->coord - j->coord;
-            Vector3f w = p.cross(dP);
+            V3 p = joint->coord - j->coord;
+            V3 w = p.cross(dP);
+            if (j->jointType==Hinge){
+                w=j->axis;
+            }
             float dT = dTheta(i);
             if (dT>0.05) dT=0.05;
             if (dT<-0.05) dT=-0.05; // limit rotating angle
             if (w.norm()>1e-3){
             	w = w / w.norm();
             	j->q = quater(cos(dT/2.0), w*sin(dT/2.0)) * j->q;
+                if (j->jointType==Hinge){
+                    if (j->q.getTheta() < j->infimumAngle){
+                        j->q = quater(cos(j->infimumAngle/2), j->q.getVec() * cos(j->infimumAngle/2));
+                    }
+                    if (j->q.getTheta() > j->supremumAngle){
+                        j->q = quater(sin(j->supremumAngle/2), j->q.getVec() * sin(j->supremumAngle/2));
+                    }
+                    }
             }
             i++;
         }
@@ -159,7 +172,7 @@ void JacobianPseudoInv(JOINT *joint, const char *target_name, const Vector3f &dP
 void reCalculateCoord(JOINT* joint, quater Q){
     quater Q2 = joint -> q;
     Q2 = Q2 * Q;
-    Vector3f afterRot = calc_rotate(Q, joint->offset);
+    V3 afterRot = calc_rotate(Q, joint->offset);
     if (joint->parent != NULL) joint -> coord = joint -> parent -> coord + afterRot;
     for (auto &child : joint->children){
         reCalculateCoord(child, Q2);
@@ -176,11 +189,11 @@ JOINT *findJoint(JOINT *joint, const char* target_name){
 	return temp;
 }
 	
-void moveTarget(const char *constraint_joint_name, const char *target_joint_name, Vector3f goalP){
-	Vector3f dP = goalP - findJoint(bvh->getRootJoint(), target_joint_name)->coord;
-    if (dP.norm() < 1) return;
-	// dP /= 10.0;
- //    if (dP.norm()<0.1) dP = dP * 0.1 / dP.norm(); // delta movement
+void moveTarget(const char *constraint_joint_name, const char *target_joint_name, V3 goalP){
+	V3 dP = goalP - findJoint(bvh->getRootJoint(), target_joint_name)->coord;
+    if (dP.norm() < 3) return;
+	dP /= 10.0;
+    if (dP.norm()<0.1) dP = dP * 0.1 / dP.norm(); // delta movement
 
     JacobianPseudoInv(findJoint(bvh->getRootJoint(),constraint_joint_name), target_joint_name, dP, NULL);
 
@@ -189,8 +202,14 @@ void moveTarget(const char *constraint_joint_name, const char *target_joint_name
 
 void jointRotationInitiation(JOINT *joint){
     joint -> q = quater();
-    if (joint == bvh->getRootJoint()) joint->coord = Vector3f(0,0,0);
+    if (joint == bvh->getRootJoint()) joint->coord = V3(0,0,0);
     else joint->coord = joint->parent->coord + joint->offset;
+    if (strcmp(joint->name,"ltibia")==0){
+        joint->jointType = Hinge;
+        joint->axis = V3(0,1,0);
+        joint->infimumAngle = 0;
+        joint->supremumAngle = PI/2-0.01;
+    }
     for (auto &child : joint->children){
         jointRotationInitiation(child);
     }

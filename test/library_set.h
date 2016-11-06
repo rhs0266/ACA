@@ -13,9 +13,11 @@
 using namespace std;
 using namespace Eigen;
 
-int drawType=1;
+int drawType=2;
 float PI = acos(-1.0);
 double dt=0.0, alpha=0.02;
+
+typedef Vector3f V3;
 
 inline string trim(const string &s)
 {
