@@ -23,14 +23,69 @@ int motionDataIndex;
 float ABS(float x){ return x>0?x:-x; }
 
 int tempFlag=0;
+
+void drawCube(Vector3f p1, Vector3f p2){
+    float w=3, h=(p2-p1).norm();
+    //cout << p1.transpose() << ", " << p2.transpose() << endl;
+    vector<Vector3f> v;
+    v.push_back(Vector3f(-w,-w,0)); v.push_back(Vector3f(-w,w,0)); v.push_back(Vector3f(w,w,0)); v.push_back(Vector3f(w,-w,0));
+    v.push_back(Vector3f(-w,-w,h)); v.push_back(Vector3f(-w,w,h)); v.push_back(Vector3f(w,w,h)); v.push_back(Vector3f(w,-w,h));
+    Vector3f t = p2 - p1; t /= t.norm();
+    Vector3f t2 = t - Vector3f(0,0,1);
+    Vector3f axis;
+    if (Vector3f(0,0,1).cross(t2).norm()>1e-3) axis=Vector3f(0,0,1).cross(t2);
+    else axis=Vector3f(0,0,1);
+    float angle = acos(Vector3f(0,0,1).dot(t));
+    // cout << t.transpose() << ", " << t2.transpose() << ", " << (axis/axis.norm()).transpose() << endl;
+    // cout << angle << endl;
+    quater Q = quater(cos(angle/2), axis/axis.norm()*sin(angle/2));
+    for (int i=0;i<8;i++){
+        v[i]=calc_rotate(Q,v[i]);
+    }
+
+    glPushMatrix();
+    glTranslatef(p1(0),p1(1),p1(2));
+    FOR (i,0,3){
+        glBegin(GL_POLYGON);
+        int i2=(i+1)%4;
+        V3P(v[i]); V3P(v[i2]); V3P(v[i2+4]); V3P(v[i+4]);
+        glEnd();
+    }
+    glBegin(GL_POLYGON); FOR (i,0,3) V3P(v[i]); glEnd();
+    glBegin(GL_POLYGON); FOR (i,4,7) V3P(v[i]); glEnd();
+
+    glColor3f(0,0,1);
+    FOR (i,0,3){
+        glBegin(GL_LINE_STRIP);
+        V3P(v[i]); V3P(v[i+4]);
+        glEnd();
+    }
+    glBegin(GL_LINE_STRIP);
+    FOR (i,0,4){
+        V3P(v[i%4]);
+    }
+    glEnd();
+    glBegin(GL_LINE_STRIP);
+    FOR (i,0,4){
+        V3P(v[i%4+4]);
+    }
+    glEnd();
+    glColor3f(1,1,1);
+    glPopMatrix();
+}
+
 void drawing(JOINT* joint){
-	//printf("%s ",joint->name);
-	//cout << joint->coord.transpose() << endl;
 	if (joint != bvh->getRootJoint()){
-		glBegin(GL_LINE_STRIP);
-		V3P(joint->parent->coord);
-		V3P(joint->coord);
-		glEnd();
+        if (drawType==1){ // line
+    		glBegin(GL_LINE_STRIP);
+    		V3P(joint->parent->coord);
+    		V3P(joint->coord);
+    		glEnd();
+        }
+        if (drawType==2){ // volume
+            //if (strcmp(joint->name,"thorax")==0)
+            drawCube(joint->parent->coord, joint->coord);
+        }
 	}
 	for (auto &child : joint->children){
 		drawing(child);
@@ -39,82 +94,63 @@ void drawing(JOINT* joint){
 
 #include <stack>
 vector<JOINT *> S;
-bool StackFlag;
-void findAndStacking(JOINT *joint, const char *target_name, Vector3f dP, JOINT *from){
-    //joint->q = quater();
+void JacobianPseudoInv(JOINT *joint, const char *target_name, const Vector3f &dP, JOINT *from){
     if (strcmp(joint->name, target_name)==0){
         // Find target, current stack S are movable joints
         MatrixXf Jv(3,S.size());
         Vector3f v_end = Vector3f(dP);
 
         int i=0;
-        printf("JOINTS LIST : ");
         for (auto &j : S){
-            printf(" -> %s : ",j->name);
             Vector3f p = joint->coord - j->coord;
             Vector3f w = p.cross(dP);
-            cout << "w = " << w.transpose() << "    ";
-            //if (w.norm()>1e-3) w = w / w.norm();
             w = w / w.norm();
-            cout << "w.norm = " << w.transpose() << endl;
             Jv(0,i) = (w.cross(p))(0);
             Jv(1,i) = (w.cross(p))(1);
             Jv(2,i) = (w.cross(p))(2);
             i++;
         }
-        printf("\n");
 
-        cout << "Jv = \n" << Jv << endl;
 
         MatrixXf Jvt = Jv.transpose();
         VectorXf dTheta;
         if (Jv.rows() <= Jv.cols()){
             MatrixXf temp = Jv*Jvt;
             if (temp.determinant() < 1e-5){
-                StackFlag = false;
                 return;
             }
             MatrixXf JvInv = Jvt * temp.inverse();
             dTheta = JvInv * dP;
-            double relative_error = (Jv*dTheta - dP).norm() / dP.norm(); // norm() is L2 norm
-            if (relative_error > 1e-4){
-                printf("			@WTF, relative error is %f\n",relative_error);
-                //return;
-            }
         }else{
             MatrixXf temp = Jvt*Jv;
             if (temp.determinant() < 1e-5){
-                StackFlag = false;
                 return;
             }
             MatrixXf JvInv = temp.inverse() * Jvt;
             dTheta = JvInv * dP;
-            double relative_error = (Jv*dTheta - dP).norm() / dP.norm(); // norm() is L2 norm
-            if (relative_error > 1e-4){
-                printf("			@WTF2, relative error is %f\n",relative_error);
-                //return;
-            }
         }
         i=0;
         for (auto &j : S){
             Vector3f p = joint->coord - j->coord;
             Vector3f w = p.cross(dP);
-            if (w.norm()>1e-5 && dTheta(i)>1e-3){
+            float dT = dTheta(i);
+            if (dT>0.05) dT=0.05;
+            if (dT<-0.05) dT=-0.05; // limit rotating angle
+            if (w.norm()>1e-3){
             	w = w / w.norm();
-            	j->q = quater(cos(dTheta(i)/2.0), w*sin(dTheta(i)/2.0)) * j->q;
+            	j->q = quater(cos(dT/2.0), w*sin(dT/2.0)) * j->q;
             }
-            //else j->q = quater();
             i++;
         }
-        StackFlag=true;
         return;
     }
     else{
     	S.push_back(joint);
-    	if (joint->parent!=NULL && joint->parent!=from) findAndStacking(joint->parent, target_name, dP, joint);
+        // from rooted tree to un-rooted tree
+    	if (joint->parent!=NULL && joint->parent!=from) JacobianPseudoInv(joint->parent, target_name, dP, joint);
         for (auto &child : joint->children){
             if (child==from) continue;
-            findAndStacking(child, target_name, dP, joint);
+            JacobianPseudoInv(child, target_name, dP, joint);
         }
         S.pop_back();
     }
@@ -123,9 +159,8 @@ void findAndStacking(JOINT *joint, const char *target_name, Vector3f dP, JOINT *
 void reCalculateCoord(JOINT* joint, quater Q){
     quater Q2 = joint -> q;
     Q2 = Q2 * Q;
-    Vector3f afterRot = calc_rotate(Q2, joint->offset);
+    Vector3f afterRot = calc_rotate(Q, joint->offset);
     if (joint->parent != NULL) joint -> coord = joint -> parent -> coord + afterRot;
-    //printf("%s %.5f %.5f %.5f\n",joint->name, joint->coord(0), joint->coord(1), joint->coord(2));
     for (auto &child : joint->children){
         reCalculateCoord(child, Q2);
     }
@@ -141,46 +176,31 @@ JOINT *findJoint(JOINT *joint, const char* target_name){
 	return temp;
 }
 	
-int Count=0;
-bool moveTarget(const char *constraint_joint_name, const char *target_joint_name, Vector3f goalP){
+void moveTarget(const char *constraint_joint_name, const char *target_joint_name, Vector3f goalP){
 	Vector3f dP = goalP - findJoint(bvh->getRootJoint(), target_joint_name)->coord;
-	dP /= 50.0;
-	cout << dP.transpose() << endl;
-    if (dP.norm() < 1e-5) return false;
-    StackFlag = false;
-    //if (Count > 10) return false;
-    printf("Iteration #%d\n", ++Count);
-    printf("\nFind And Stacking-----------------------------\n");
-    findAndStacking(findJoint(bvh->getRootJoint(),constraint_joint_name), target_joint_name, dP, NULL);
+    if (dP.norm() < 1) return;
+	// dP /= 10.0;
+ //    if (dP.norm()<0.1) dP = dP * 0.1 / dP.norm(); // delta movement
 
-    printf("\nRe-Calculate Coordinates----------------------\n");
+    JacobianPseudoInv(findJoint(bvh->getRootJoint(),constraint_joint_name), target_joint_name, dP, NULL);
+
     reCalculateCoord(bvh->getRootJoint(), quater());
-    //printf("MOVE TARGET FINISH\n\n");
-    return StackFlag;
 }
 
 void jointRotationInitiation(JOINT *joint){
     joint -> q = quater();
     if (joint == bvh->getRootJoint()) joint->coord = Vector3f(0,0,0);
     else joint->coord = joint->parent->coord + joint->offset;
-    printf("%s %.5f %.5f %.5f\n",joint->name, joint->coord(0), joint->coord(1), joint->coord(2));
     for (auto &child : joint->children){
         jointRotationInitiation(child);
     }
 }
 void setting(){
     motionDataIndex = 0;
-    printf("@Setting\n");
 	jointRotationInitiation(bvh->getRootJoint());
 }	
-void draw(int idx){
-	//motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
-	//jointRotationInitiation(bvh->getRootJoint());
-
+void draw(int idx){ // idx is only need for "BVH LOADING"
 	if (bvh!=NULL){
-		// printf("@draw\n");
-		motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
-		//printf("%d ",motionDataIndex);
 		drawing(bvh->getRootJoint());
 	}
 }

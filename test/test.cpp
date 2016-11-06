@@ -191,6 +191,29 @@ void glutMouse(int button, int state, int x, int y)
 
 typedef float F;
 
+
+Vector3f LeftHandPos0 = Vector3f(1.02979, 19.157, 5.30619);
+Vector3f LeftHandPos1 = Vector3f(20, 12, 20);
+Vector3f LeftHandPos2 = Vector3f(-20, 12, 20);
+Vector3f LeftHandPos3 = Vector3f(20, 12, 50);
+Vector3f RightHandPos0 = Vector3f(1.02979, -19.157, 5.30619);
+Vector3f RightHandPos1 = Vector3f(20, -12, 20);
+Vector3f RightHandPos2 = Vector3f(-20, -12, 20);
+Vector3f RightHandPos3 = Vector3f(20, -12, 50);
+Vector3f LeftToesPos0 = Vector3f(9.43820, 21.99450, -60.24100);
+Vector3f LeftToesPos1 = Vector3f(55.4382, 21.99450, -40.24100);
+Vector3f LeftToesPos2 = Vector3f(-9.43820, 21.99450, -60.24100);
+Vector3f LeftToesPos3 = Vector3f(9.43820, 21.99450, -40.24100);
+Vector3f RightToesPos0 = Vector3f(9.43820, -21.99450, -60.24100);
+Vector3f RightToesPos1 = Vector3f(55.4382, -21.99450, -40.24100);
+Vector3f RightToesPos2 = Vector3f(-9.43820, -21.99450, -60.24100);
+Vector3f RightToesPos3 = Vector3f(9.43820, -21.99450, -40.24100);
+
+Vector3f LeftHand = LeftHandPos0;
+Vector3f RightHand = RightHandPos0;
+Vector3f LeftToes = LeftToesPos0;
+Vector3f RightToes = RightToesPos0;
+
 void display() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -200,9 +223,13 @@ void display() {
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPolygonMode(GL_BACK,GL_FILL);
-    glPolygonMode(GL_FRONT,GL_LINE);
+    glPolygonMode(GL_FRONT,GL_FILL);
     loadGlobalCoord();
 
+    moveTarget("lhumerus", "lhand", LeftHand);
+    moveTarget("rhumerus", "rhand", RightHand);
+    moveTarget("lfemur", "ltoes", LeftToes);
+    moveTarget("rfemur", "rtoes", RightToes);
     draw(frame_idx);
 
     
@@ -219,8 +246,6 @@ void resize(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
-
-
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
     case 27:
@@ -236,12 +261,57 @@ void keyboard(unsigned char key, int x, int y) {
         Tot=quater();
         break;
 	case '1': // body, arm bending
-		drawType=1-drawType;
+		drawType=3-drawType;
 		break;
     case 'm':
-        //moveTarget("pelvis", "ltoes", Vector3f(20.0,12,-60));
-        moveTarget("lhumerus", "lhand", Vector3f(20.0,12,20));
+        LeftHand = LeftHandPos3;
         break;
+    case ',':
+        LeftHand = LeftHandPos2;
+        break;
+    case '.':
+        LeftHand = LeftHandPos1;
+        break;
+    case '/':
+        LeftHand = LeftHandPos0;
+        break;
+    case 'c':
+        RightHand = RightHandPos3;
+        break;
+    case 'v':
+        RightHand = RightHandPos2;
+        break;
+    case 'b':
+        RightHand = RightHandPos1;
+        break;
+    case 'n':
+        RightHand = RightHandPos0;
+        break;
+    case 'k':
+        LeftToes = LeftToesPos3;
+        break;
+    case 'l':
+        LeftToes = LeftToesPos2;
+        break;
+    case ';':
+        LeftToes = LeftToesPos1;
+        break;
+    case '\'':
+        LeftToes = LeftToesPos0;
+        break;
+    case 'f':
+        RightToes = RightToesPos3;
+        break;
+    case 'g':
+        RightToes = RightToesPos2;
+        break;
+    case 'h':
+        RightToes = RightToesPos1;
+        break;
+    case 'j':
+        RightToes = RightToesPos0;
+        break;
+
     case 'w': // 'w' view up translate
         translate = translate + calc_rotate(Tot, Vector3f(0,-1,0));
         break;
@@ -254,14 +324,7 @@ void keyboard(unsigned char key, int x, int y) {
     case 'd': // 'd' view right translate
         translate = translate + calc_rotate(Tot, Vector3f(-1,0,0));
         break;
-    case 'f': // 'f' ready for getting mousepoint for 'seek'
-        seekFlag = true;
-        break;
-    case 'b': // 'b' move camera backward to show all
-        translate = Vector3f(0,0,0);
-        eye=Vector3f(0.0f,0.0f,30.0f / tan((fov/2)*PI/180.0));
-        //cout << 30.0f / tan((fov/2)*PI/180.0) << "\n";
-        break;
+
     case '[': // '[' view dolly in
         if (eye(2)<=5) break;
         eye(2)-=1;
@@ -269,14 +332,6 @@ void keyboard(unsigned char key, int x, int y) {
     case ']': // ']' view dolly out
         if (eye(2)>=300) break;
         eye(2)+=1;
-        break;
-    case ';': // ';' view zoom in
-        if (fov<=5) break;
-        fov -= 1.0;
-        break;
-    case '\'': // ''' view zoom out
-        if (fov>=90) break;
-        fov += 1.0;
         break;
     default:
         break;
@@ -287,18 +342,6 @@ void keyboard(unsigned char key, int x, int y) {
 unsigned timeStep = 30;
 void Timer(int unused)
 {
-	if (type==1)
-		if (0.0f<=dt && dt<=0.995f) dt+=alpha;
-		else alpha=-alpha, dt+=alpha;
-	else if (type==2){
-		dt+=alpha;
-		if (dt>=1.0f) dt=0.0f;
-	}
-	else if (type==3){
-		if (0.0f<=dt && dt<=0.995f) dt+=alpha;
-		else alpha=-alpha, dt+=alpha;
-	}
-	frame_idx++;
     glutPostRedisplay();
     glutTimerFunc(timeStep, Timer, 0);
 }
@@ -313,16 +356,14 @@ void ManualPrint(){
     fprintf(out,"[ d ] : move right\n");
     fprintf(out,"[ w ] : move up\n");
     fprintf(out,"------------------\n");
+    fprintf(out,"[m | , | . | / ] : move left hand of human object. each command corresponds to goal positions\n");
+    fprintf(out,"[c | v | b | n ] : move right hand of human object. each command corresponds to goal positions\n");
+    fprintf(out,"[k | l | ; | ' ] : move left toes of human object. each command corresponds to goal positions\n");
+    fprintf(out,"[f | g | h | j ] : move right toes of human object. each command corresponds to goal positions\n");
+    fprintf(out,"------------------\n");
     fprintf(out,"[ [ ] : dolly in,  exists maximum range\n");
     fprintf(out,"[ ] ] : dolly out, exists maximum range\n");
-    fprintf(out,"[ ; ] : zoom in,   exists maximum range\n");
-    fprintf(out,"[ ' ] : zoom out,  exists maximum range\n");
-
-    fprintf(out,"[ b ] : show all,  if cannot see anything, press 'space bar'\n");
-    fprintf(out,"[ f ] : seek, after press f, click mouse on the surface. if not, nothing happens\n");
-    fprintf(out,"[ l ] : show or hide standard line for checking the center of rotation\n");
     fprintf(out,"------------------\n");
-    fprintf(out,"[ space bar ] : reset fov, cam dist, translate, rotation\n");
     fprintf(out,"[ esc ] : exit program.\n");
 }
 
@@ -342,7 +383,7 @@ int main(int argc, char **argv) {
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);
     glutInitWindowPosition( 50, 0 );
-    glutCreateWindow("Platonic Solid");
+    glutCreateWindow("Inverse Kinematic");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_DEPTH_BUFFER_BIT);

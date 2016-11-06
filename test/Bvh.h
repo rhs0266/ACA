@@ -216,8 +216,6 @@ void Bvh::loadMotion(istream& stream){
 			//creating motion data array
 			motionData.data = new float[num_frames * num_channels];
 
-			cout << num_frames*num_channels << endl;
-
 			for (int frame=0;frame<num_frames;frame++){
 				for (int channel=0;channel<num_channels;channel++){
 					float x;

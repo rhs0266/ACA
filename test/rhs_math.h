@@ -91,6 +91,9 @@ struct quater{
         //v = v / v.norm();
         p[0]=p0, p[1]=v(0), p[2]=v(1), p[3]=v(2);
     }
+    void print(){
+        printf("%.5lf %.5lf %.5lf %.5lf\n",p[0],p[1],p[2],p[3]);
+    }
     quater inverse(){
         return quater(p[0],-p[1],-p[2],-p[3]);
     }
