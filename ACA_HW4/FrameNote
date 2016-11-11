@@ -1,0 +1,6 @@
+Note
+File Name : Trial001.bvh
+Stop(S) / Right Foot Ahead(RFA)
+S -> RFA	: 447 to 542
+RFA -> RFA	: 542 to 665
+RFA -> S 	: 665 to 789

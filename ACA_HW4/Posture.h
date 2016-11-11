@@ -17,10 +17,12 @@ struct Posture{
     Displace operator-(const Posture &rhs){
         assert(q.size()!=rhs.q.size());
 
-        V3 _p = calc_rotate(rhs.q[0].inverse(),p-rhs.p);
+        quater temp = rhs.q[0];
+        V3 _p = calc_rotate(temp.inverse(),p-rhs.p);
         vector<V3> _q;
         for (int i=0;i<q.size();i++){
-            _q.push_back(LOG(rhs.q[i].inverse() * q[i])); // TODO LOG()
+        	quater temp = rhs.q[i];
+            _q.push_back(LOG(temp.inverse() * q[i])); // TODO LOG()
         }
         return Displace(_p, _q);
     }

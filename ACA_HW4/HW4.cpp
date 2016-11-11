@@ -227,15 +227,8 @@ void display() {
     glPolygonMode(GL_FRONT,GL_FILL);
     loadGlobalCoord();
 
-    if (moveType==1){
-        moveTarget("lhumerus", "lhand", LeftHand);
-        moveTarget("rhumerus", "rhand", RightHand);
-        moveTarget("lfemur", "ltoes", LeftToes);
-        moveTarget("rfemur", "rtoes", RightToes);
-    }else{
-        moveTarget("ltoes", "lhand", LeftHand);
-    }
-    draw(frame_idx);
+
+    drawBvh(frame_idx);
 
     
     glutSwapBuffers();
@@ -265,59 +258,18 @@ void keyboard(unsigned char key, int x, int y) {
         fov=45;
         Tot=quater();
         break;
-	case '1': // body, arm bending
-		drawType=3-drawType;
-		break;
-    case '2':
-        moveType=3-moveType;
+
+    case '1':
+        drawType = 3 - drawType;
         break;
-    case 'm':
-        LeftHand = LeftHandPos3;
-        break;
-    case ',':
-        LeftHand = LeftHandPos2;
-        break;
-    case '.':
-        LeftHand = LeftHandPos1;
-        break;
-    case '/':
-        LeftHand = LeftHandPos0;
-        break;
-    case 'c':
-        RightHand = RightHandPos3;
-        break;
-    case 'v':
-        RightHand = RightHandPos2;
-        break;
-    case 'b':
-        RightHand = RightHandPos1;
-        break;
-    case 'n':
-        RightHand = RightHandPos0;
-        break;
-    case 'k':
-        LeftToes = LeftToesPos3;
+	case 'h':
+        frame_idx--;
         break;
     case 'l':
-        LeftToes = LeftToesPos2;
+        frame_idx++;
         break;
-    case ';':
-        LeftToes = LeftToesPos1;
-        break;
-    case '\'':
-        LeftToes = LeftToesPos0;
-        break;
-    case 'f':
-        RightToes = RightToesPos3;
-        break;
-    case 'g':
-        RightToes = RightToesPos2;
-        break;
-    case 'h':
-        RightToes = RightToesPos1;
-        break;
-    case 'j':
-        RightToes = RightToesPos0;
+    case 'p':
+        printf("current_frame = %d\n",frame_idx);
         break;
 
     case 'w': // 'w' view up translate
@@ -379,7 +331,7 @@ int main(int argc, char **argv) {
     ManualPrint();
 	if (argc>=2){
     	bvh_load_upload(argv[1], 1);
-        setting();
+        //setting();
     }
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);

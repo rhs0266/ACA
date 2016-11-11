@@ -75,20 +75,52 @@ void drawCube(V3 p1, V3 p2){
     glPopMatrix();
 }
 
-void drawing(JOINT* joint){
+void drawingBvh(JOINT* joint, V3 p, quater q){
+    joint->q = quater();
+    for (int i=0;i<joint->num_channels;i++){
+        int channel = (int)joint->channels_order[i];
+        if (channel == Xposition){
+            p(0) = bvh->motionData.data[motionDataIndex+i];
+        }
+        if (channel == Yposition){
+            p(1) = bvh->motionData.data[motionDataIndex+i];
+        }
+        if (channel == Zposition){
+            p(2) = bvh->motionData.data[motionDataIndex+i];
+        }
+
+        if (channel == Xrotation){
+            float angle = bvh->motionData.data[motionDataIndex+i] * PI / 180.0;
+            joint->q = joint->q * quater(cos(angle/2), V3(1,0,0)*sin(angle/2));
+        }
+        if (channel == Yrotation){
+            float angle = bvh->motionData.data[motionDataIndex+i] * PI / 180.0;
+            joint->q = joint->q * quater(cos(angle/2), V3(0,1,0)*sin(angle/2));
+        }
+        if (channel == Zrotation){
+            float angle = bvh->motionData.data[motionDataIndex+i] * PI / 180.0;
+            joint->q = joint->q * quater(cos(angle/2), V3(0,0,1)*sin(angle/2));
+        }
+    }
+    motionDataIndex += joint->num_channels;
+
+    quater nextQ = q * joint->q;
+    V3 nextP = p + calc_rotate(q, joint->offset);
+
 	if (joint != bvh->getRootJoint()){
         if (drawType==1){ // line
     		glBegin(GL_LINE_STRIP);
-    		V3P(joint->parent->coord);
-    		V3P(joint->coord);
+    		V3P(p);
+    		V3P(nextP);
     		glEnd();
         }
         if (drawType==2){ // volume
-            drawCube(joint->parent->coord, joint->coord);
+            drawCube(p, nextP);
         }
 	}
+    //else cout << joint->offset.transpose() << " / " << nextP.transpose() << endl;
 	for (auto &child : joint->children){
-		drawing(child);
+		drawingBvh(child, nextP, nextQ);
 	}
 }
 
@@ -251,9 +283,10 @@ void setting(){
     motionDataIndex = 0;
 	jointRotationInitiation(bvh->getRootJoint());
 }	
-void draw(int idx){ // idx is only need for "BVH LOADING"
+void drawBvh(int idx){ // idx is only need for "BVH LOADING"
 	if (bvh!=NULL){
-		drawing(bvh->getRootJoint());
+        motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
+		drawingBvh(bvh->getRootJoint(), V3(0,0,0), quater());
 	}
 }
 position getEyePosition(){
