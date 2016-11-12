@@ -12,7 +12,7 @@
 Bvh *bvh = NULL;
 GLuint bvhVAO;
 GLuint bvhVBO;
-void bvh_load_upload(char *bvhFileName, int frame=1){
+void bvh_load_upload(char *bvhFileName){
 	if (bvh==NULL){
 		bvh=new Bvh;
 		bvh->load(bvhFileName);
@@ -22,8 +22,6 @@ void bvh_load_upload(char *bvhFileName, int frame=1){
 int motionDataIndex;
 
 float ABS(float x){ return x>0?x:-x; }
-
-int tempFlag=0;
 
 void drawLine(V3 p1, V3 p2){
     glBegin(GL_LINE_STRIP);
@@ -82,13 +80,46 @@ void drawCube(V3 p1, V3 p2){
     glPopMatrix();
 }
 
-void getPosture(JOINT *joint, quater q, Posture *posture){
+void getPosture(JOINT *joint, Posture *posture, int *idx){
+    posture->q[*idx] = quater();
+    if (joint->parent == NULL) posture->p = joint->offset;
+    for (int i=0;i<joint->num_channels;i++){
+        int channel = (int)joint->channels_order[i];
+        if (channel == Xposition){
+            posture->p(0) += bvh->motionData.data[motionDataIndex+i];
+        }
+        if (channel == Yposition){
+            posture->p(1) += bvh->motionData.data[motionDataIndex+i];
+        }
+        if (channel == Zposition){
+            posture->p(2) += bvh->motionData.data[motionDataIndex+i];
+        }
 
+        if (channel == Xrotation){
+            float angle = bvh->motionData.data[motionDataIndex+i] * PI / 180.0;
+            posture->q[*idx] = posture->q[*idx] * quater(cos(angle/2), V3(1,0,0)*sin(angle/2));
+        }
+        if (channel == Yrotation){
+            float angle = bvh->motionData.data[motionDataIndex+i] * PI / 180.0;
+            posture->q[*idx] = posture->q[*idx] * quater(cos(angle/2), V3(0,1,0)*sin(angle/2));
+        }
+        if (channel == Zrotation){
+            float angle = bvh->motionData.data[motionDataIndex+i] * PI / 180.0;
+            posture->q[*idx] = posture->q[*idx] * quater(cos(angle/2), V3(0,0,1)*sin(angle/2));
+        }
+    }
+    motionDataIndex += joint->num_channels;
+    (*idx)++;
+
+    for (auto &child : joint->children){
+        getPosture(child, posture, idx);
+    }
 }
 
 void readSingleFrame(int frameIdx, Posture *posture){ // read specific frame info and convert to posture
     motionDataIndex = (frameIdx % bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
-    getPosture(bvh->getRootJoint(), quater(), posture);
+    int idx = 0;
+    getPosture(bvh->getRootJoint(), posture, &idx);
 }
 
 void drawingBvh(JOINT* joint, V3 p, quater q){
@@ -331,7 +362,6 @@ position getEyePosition(){
 }
 
 void InitiatingPosture(JOINT *joint, Posture *posture){
-    cout << joint->name << " ";
     posture->q.push_back(quater());
     for (auto &child:joint->children)
         InitiatingPosture(child,posture);

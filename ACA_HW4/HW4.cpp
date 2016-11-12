@@ -186,31 +186,6 @@ void glutMouse(int button, int state, int x, int y){
     return;
 }
 
-typedef float F;
-
-
-V3 LeftHandPos0 = V3(1.02979, 19.157, 5.30619);
-V3 LeftHandPos1 = V3(20, 12, 20);
-V3 LeftHandPos2 = V3(-20, 12, 20);
-V3 LeftHandPos3 = V3(20, 12, 50);
-V3 RightHandPos0 = V3(1.02979, -19.157, 5.30619);
-V3 RightHandPos1 = V3(20, -12, 20);
-V3 RightHandPos2 = V3(-20, -12, 20);
-V3 RightHandPos3 = V3(20, -12, 50);
-V3 LeftToesPos0 = V3(9.43820, 21.99450, -60.24100);
-V3 LeftToesPos1 = V3(20.4382, 24.99450, -50.24100);
-V3 LeftToesPos2 = V3(-9.43820, 21.99450, -60.24100);
-V3 LeftToesPos3 = V3(9.43820, 30.99450, -57.24100);
-V3 RightToesPos0 = V3(9.43820, -21.99450, -60.24100);
-V3 RightToesPos1 = V3(20.4382, -24.99450, -50.24100);
-V3 RightToesPos2 = V3(-9.43820, -21.99450, -60.24100);
-V3 RightToesPos3 = V3(9.43820, -30.99450, -55.24100);
-//V3 RightToesPos3 = V3(0, -70, 0);
-
-V3 LeftHand = LeftHandPos0;
-V3 RightHand = RightHandPos0;
-V3 LeftToes = LeftToesPos0;
-V3 RightToes = RightToesPos0;
 Posture current_posture;
 
 void display() {
@@ -226,14 +201,15 @@ void display() {
     loadGlobalCoord();
 
 
-    //drawBvh(frame_idx);
-    drawPosture(&current_posture);
+    drawBvh(frame_idx);
+    //drawPosture(&current_posture);
     //TODO : Test exchanging between Posture & Hierarchy
 
     
     glutSwapBuffers();
 }
 
+int tempFlag=0;
 void resize(int w, int h) {
     width = w;
     height = h;
@@ -261,6 +237,13 @@ void keyboard(unsigned char key, int x, int y) {
 
     case '1':
         drawType = 3 - drawType;
+        break;
+    case '2':
+        tempFlag = 1 - tempFlag;
+        break;
+    case 'i':
+        int target_frame; scanf("%d",&target_frame);
+        readSingleFrame(target_frame, &current_posture);
         break;
 	case 'h':
         frame_idx--;
@@ -302,6 +285,7 @@ void keyboard(unsigned char key, int x, int y) {
 unsigned timeStep = 30;
 void Timer(int unused)
 {
+    if (tempFlag==1) frame_idx++;
     glutPostRedisplay();
     glutTimerFunc(timeStep, Timer, 0);
 }
@@ -330,7 +314,7 @@ void ManualPrint(){
 int main(int argc, char **argv) {
     ManualPrint();
 	if (argc>=2){
-    	bvh_load_upload(argv[1], 1);
+    	bvh_load_upload(argv[1]);
         InitialPosutre(&current_posture);
         //setting();
     }

@@ -3,4 +3,4 @@ all:
 compile:
 	g++ -w -std=c++11 -I ./ HW4.cpp -lm -lGL -lGLU -lglut
 run:
-	./a.out test.bvh
+	./a.out 16_15_walk.bvh
