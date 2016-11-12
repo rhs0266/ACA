@@ -75,6 +75,15 @@ void drawCube(V3 p1, V3 p2){
     glPopMatrix();
 }
 
+void getPosture(JOINT *joint, quater q, Posture *posture){
+
+}
+
+void readSingleFrame(int frameIdx, Posture *posture){ // read specific frame info and convert to posture
+    motionDataIndex = (frameIdx % bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
+    getPosture(bvh->getRootJoint(), quater(), posture);
+}
+
 void drawingBvh(JOINT* joint, V3 p, quater q){
     joint->q = quater();
     for (int i=0;i<joint->num_channels;i++){

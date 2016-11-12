@@ -228,7 +228,8 @@ void display() {
     loadGlobalCoord();
 
 
-    drawBvh(frame_idx);
+    //drawBvh(frame_idx);
+    //TODO : Test exchanging between Posture & Hierarchy
 
     
     glutSwapBuffers();
