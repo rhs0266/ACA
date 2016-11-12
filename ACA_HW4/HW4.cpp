@@ -41,8 +41,7 @@ V3 eye = V3(0.0f, 0.0f, 500.0f);
 V3 ori = V3(0.0f, 0.0f, 0.0f);
 float rot[3] = { 0.0f, 0.0f, 0.0f };
 
-void loadGlobalCoord()
-{
+void loadGlobalCoord(){
     glLoadIdentity();
     V3 eye_new, ori_new, up_new;
     eye_new = calc_rotate(Tot,eye) + translate;
@@ -99,8 +98,7 @@ V3 D2toD3(int x,int y){ // return V3 of intercept b/w cam & cos(center of sphere
     return ray(eye_new, vec, ori_new, trackballRadius);
 }
 
-void glutMotion(int x, int y)
-{
+void glutMotion(int x, int y){
     trackballRadius = eye(2) * 0.4 * (fov/45);
     pv=D2toD3(mousePosX, mousePosY);
     v =D2toD3(x,y);
@@ -147,8 +145,7 @@ V3 getPointOnPlane(int x,int y){
 //------------------------------------------------------------------------
 // Function that handles mouse input
 //------------------------------------------------------------------------
-void glutMouse(int button, int state, int x, int y)
-{
+void glutMouse(int button, int state, int x, int y){
     curMouseX = x, curMouseY = y;
     switch ( button )
     {
@@ -214,6 +211,7 @@ V3 LeftHand = LeftHandPos0;
 V3 RightHand = RightHandPos0;
 V3 LeftToes = LeftToesPos0;
 V3 RightToes = RightToesPos0;
+Posture current_posture;
 
 void display() {
     glMatrixMode(GL_PROJECTION);
@@ -229,6 +227,7 @@ void display() {
 
 
     //drawBvh(frame_idx);
+    drawPosture(&current_posture);
     //TODO : Test exchanging between Posture & Hierarchy
 
     
@@ -332,6 +331,7 @@ int main(int argc, char **argv) {
     ManualPrint();
 	if (argc>=2){
     	bvh_load_upload(argv[1], 1);
+        InitialPosutre(&current_posture);
         //setting();
     }
     glutInit(&argc, argv);

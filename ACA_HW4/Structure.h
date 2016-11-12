@@ -25,6 +25,13 @@ float ABS(float x){ return x>0?x:-x; }
 
 int tempFlag=0;
 
+void drawLine(V3 p1, V3 p2){
+    glBegin(GL_LINE_STRIP);
+    V3P(p1);
+    V3P(p2);
+    glEnd();
+}
+
 void drawCube(V3 p1, V3 p2){
     float w=3, h=(p2-p1).norm();
     //cout << p1.transpose() << ", " << p2.transpose() << endl;
@@ -118,10 +125,7 @@ void drawingBvh(JOINT* joint, V3 p, quater q){
 
 	if (joint != bvh->getRootJoint()){
         if (drawType==1){ // line
-    		glBegin(GL_LINE_STRIP);
-    		V3P(p);
-    		V3P(nextP);
-    		glEnd();
+    		drawLine(p, nextP);
         }
         if (drawType==2){ // volume
             drawCube(p, nextP);
@@ -132,6 +136,34 @@ void drawingBvh(JOINT* joint, V3 p, quater q){
 		drawingBvh(child, nextP, nextQ);
 	}
 }
+
+void drawBvh(int idx){ // idx is only need for "BVH LOADING"
+    assert (bvh!=NULL);
+    motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
+    drawingBvh(bvh->getRootJoint(), V3(0,0,0), quater());
+}
+
+void drawingPosture(JOINT *joint, Posture *posture, V3 p, quater q, int *idx){
+    quater nextQ = q * posture->q[(*idx)++];
+    V3 nextP = p + calc_rotate(q, joint->offset);
+    if (joint -> parent != NULL){ // root joint
+        if (drawType==1){
+            drawLine(p, nextP);
+        }else{
+            drawCube(p, nextP);
+        }
+    }
+    for (auto &child : joint->children){
+        drawingPosture(child, posture, nextP, nextQ, idx);
+    }
+}
+
+void drawPosture(Posture *posture){
+    assert (bvh!=NULL);
+    int idx = 0;
+    drawingPosture(bvh->getRootJoint(), posture, posture->p, quater(), &idx);
+}
+
 
 #include <stack>
 vector<JOINT *> S;
@@ -289,15 +321,23 @@ void jointRotationInitiation(JOINT *joint){
     }
 }
 void setting(){
+    assert (bvh!=NULL);
+
     motionDataIndex = 0;
 	jointRotationInitiation(bvh->getRootJoint());
-}	
-void drawBvh(int idx){ // idx is only need for "BVH LOADING"
-	if (bvh!=NULL){
-        motionDataIndex = (idx%bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
-		drawingBvh(bvh->getRootJoint(), V3(0,0,0), quater());
-	}
 }
 position getEyePosition(){
 	return position(bvh->motionData.data[0],bvh->motionData.data[1],bvh->motionData.data[2]+500.0);
+}
+
+void InitiatingPosture(JOINT *joint, Posture *posture){
+    cout << joint->name << " ";
+    posture->q.push_back(quater());
+    for (auto &child:joint->children)
+        InitiatingPosture(child,posture);
+}
+void InitialPosutre(Posture *posture){
+    assert (bvh!=NULL); 
+    posture->p=V3(0,0,0);
+    InitiatingPosture(bvh->getRootJoint(), posture);
 }
