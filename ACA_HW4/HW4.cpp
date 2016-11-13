@@ -49,8 +49,7 @@ void loadGlobalCoord(){
     up_new = calc_rotate(Tot, V3(0,1,0));
     gluLookAt(eye_new(0), eye_new(1), eye_new(2), ori_new(0), ori_new(1), ori_new(2), up_new(0), up_new(1), up_new(2));
 
-    glMultMatrixd(rotMatrix);
-}
+    glMultMatrixd(rotMatrix);}
 
 
 //------------------------------------------------------------------------
@@ -77,8 +76,7 @@ V3 ray(V3 A, V3 B, V3 C, float r){ // A+kB on sphere
     }else{
         p = p / p.norm() * (p.norm() - sqrt(r*r - e.norm()*e.norm()));
     }
-    return A+p;
-}
+    return A+p;}
 
 void print(V3 x, string name){
     cout << name;
@@ -183,10 +181,10 @@ void glutMouse(int button, int state, int x, int y){
         case 3:break;
         default:break;
     }
-    return;
-}
+    return;}
 
 Posture current_posture;
+    Posture p1, p2;
 
 void display() {
     glMatrixMode(GL_PROJECTION);
@@ -201,9 +199,17 @@ void display() {
     loadGlobalCoord();
 
 
-    drawBvh(frame_idx);
+    //drawBvh(frame_idx);
+    //readSingleFrame(frame_idx, &current_posture);
     //drawPosture(&current_posture);
-    //TODO : Test exchanging between Posture & Hierarchy
+    //TODO : Test exchanging between Posture & Hierarchy - Done
+    //TODO : Displacement Test
+    readSingleFrame(0, &p1);
+    readSingleFrame(36, &p2);
+    Displace displace = p2 - p1;
+    Posture p3 = p1 + displace;
+    //drawPosture(&p2);
+    drawPosture(&p3);
 
     
     glutSwapBuffers();
@@ -218,8 +224,7 @@ void resize(int w, int h) {
     glLoadIdentity();
     gluPerspective(fov, (GLfloat)w / (GLfloat)h, .1f, 500.0f);
     glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
+    glLoadIdentity();}
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
     case 27:

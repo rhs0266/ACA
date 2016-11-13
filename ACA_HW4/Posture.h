@@ -9,22 +9,29 @@ struct Posture{
     Posture(){};
     Posture(V3 _p, vector<quater> _q):p(_p),q(_q){};
     Posture operator+(const Displace &rhs){
-        assert(q.size()!=rhs.q.size());
+        assert(q.size()==rhs.q.size());
+
+        Posture ret = Posture(p,q);
         
-        addTranslation(calc_rotate(q[0], rhs.p));
-        for (int i=0;i<q.size();i++) addRotation(i, rhs.q[i]);
+        ret.addTranslation(calc_rotate(q[0], rhs.p));
+        for (int i=0;i<q.size();i++){
+        	ret.addRotation(i, rhs.q[i]);
+        }
+        return ret;
     }
     Displace operator-(const Posture &rhs){
-        assert(q.size()!=rhs.q.size());
+        assert(q.size()==rhs.q.size());
+
+        Displace ret= Displace();
 
         quater temp = rhs.q[0];
-        V3 _p = calc_rotate(temp.inverse(),p-rhs.p);
-        vector<V3> _q;
+        ret.p = calc_rotate(temp.inverse(),p-rhs.p);
+
         for (int i=0;i<q.size();i++){
         	quater temp = rhs.q[i];
-            _q.push_back(LOG(temp.inverse() * q[i])); // TODO LOG()
+            ret.q.push_back(LOG(temp.inverse() * q[i])); // TODO LOG()
         }
-        return Displace(_p, _q);
+        return ret;
     }
     void addTranslation(const V3& d){
         p += d;

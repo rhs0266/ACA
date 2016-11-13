@@ -81,7 +81,7 @@ void drawCube(V3 p1, V3 p2){
 }
 
 void getPosture(JOINT *joint, Posture *posture, int *idx){
-    posture->q[*idx] = quater();
+    posture->q.push_back(quater());
     if (joint->parent == NULL) posture->p = joint->offset;
     for (int i=0;i<joint->num_channels;i++){
         int channel = (int)joint->channels_order[i];
@@ -119,6 +119,7 @@ void getPosture(JOINT *joint, Posture *posture, int *idx){
 void readSingleFrame(int frameIdx, Posture *posture){ // read specific frame info and convert to posture
     motionDataIndex = (frameIdx % bvh->motionData.num_frames) * bvh->motionData.num_motion_channels;
     int idx = 0;
+    posture->q.clear();
     getPosture(bvh->getRootJoint(), posture, &idx);
 }
 

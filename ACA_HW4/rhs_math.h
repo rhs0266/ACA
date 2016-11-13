@@ -159,6 +159,7 @@ V3 calc_rotate(quater Q, V3 _P){
     return V3(P.p[1],P.p[2],P.p[3]);
 }
 V3 LOG(quater q){
+    if (q.getTheta()<1e-6) return V3(0,0,0);
     return V3(q.getVec() * q.getTheta());
 }
 quater EXP(V3 p){
