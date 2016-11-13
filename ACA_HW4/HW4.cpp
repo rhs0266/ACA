@@ -207,7 +207,7 @@ void display() {
     readSingleFrame(0, &p1);
     readSingleFrame(36, &p2);
     Displace displace = p2 - p1;
-    Posture p3 = p1 + displace;
+    Posture p3 = p2 + (p1 - p2);
     //drawPosture(&p2);
     drawPosture(&p3);
 
