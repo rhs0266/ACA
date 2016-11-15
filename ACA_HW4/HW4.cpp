@@ -184,7 +184,11 @@ void glutMouse(int button, int state, int x, int y){
     return;}
 
 Posture current_posture;
-    Posture p1, p2;
+vector<Posture> StoW, WtoS, Walk, TL, TR;
+
+void makeGround(){
+    drawCube(V3(0,-100,-100),V3(0,-100,-700),100);
+}
 
 void display() {
     glMatrixMode(GL_PROJECTION);
@@ -198,20 +202,22 @@ void display() {
     glPolygonMode(GL_FRONT,GL_FILL);
     loadGlobalCoord();
 
+    makeGround();
 
-    //drawBvh(frame_idx);
-    //readSingleFrame(frame_idx, &current_posture);
-    //drawPosture(&current_posture);
-    //TODO : Test exchanging between Posture & Hierarchy - Done
-    //TODO : Displacement Test
-    readSingleFrame(0, &p1);
-    readSingleFrame(36, &p2);
-    Displace displace = p2 - p1;
-    Posture p3 = p2 + (p1 - p2);
-    //drawPosture(&p2);
-    drawPosture(&p3);
 
-    
+    Displace d = Walk[Walk.size()-1] - TL[0];
+    for (int i=1;i<d.q.size();i++) d.q[i]=V3(0, 0, 0);
+
+    int idx = frame_idx % (Walk.size() + TL.size());
+    if (idx<Walk.size()){
+        current_posture = Walk[idx];
+    }else{
+        current_posture = TL[idx - Walk.size()] + d;
+    }
+
+    drawPosture(&current_posture);
+    drawPosture(&TL[frame_idx%TL.size()]);
+
     glutSwapBuffers();
 }
 
@@ -250,7 +256,7 @@ void keyboard(unsigned char key, int x, int y) {
         int target_frame; scanf("%d",&target_frame);
         readSingleFrame(target_frame, &current_posture);
         break;
-	case 'h':
+    case 'h':
         frame_idx--;
         break;
     case 'l':
@@ -318,16 +324,21 @@ void ManualPrint(){
 
 int main(int argc, char **argv) {
     ManualPrint();
-	if (argc>=2){
-    	bvh_load_upload(argv[1]);
-        InitialPosutre(&current_posture);
+    if (argc>=3){
+        //InitialPosutre(&current_posture);
         //setting();
+
+        bvh_load_upload(argv[1]);
+        Walk = readMultiFrames(18,80);
+        bvh_load_upload(argv[2]);
+        TL = readMultiFrames(0,132);
+
     }
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);
     glutInitWindowPosition( 50, 0 );
-    glutCreateWindow("Inverse Kinematic");
+    glutCreateWindow("Motion Warping");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_DEPTH_BUFFER_BIT);

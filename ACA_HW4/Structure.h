@@ -13,10 +13,8 @@ Bvh *bvh = NULL;
 GLuint bvhVAO;
 GLuint bvhVBO;
 void bvh_load_upload(char *bvhFileName){
-	if (bvh==NULL){
-		bvh=new Bvh;
-		bvh->load(bvhFileName);
-	}
+	bvh=new Bvh;
+	bvh->load(bvhFileName);
 }
 
 int motionDataIndex;
@@ -30,8 +28,8 @@ void drawLine(V3 p1, V3 p2){
     glEnd();
 }
 
-void drawCube(V3 p1, V3 p2){
-    float w=3, h=(p2-p1).norm();
+void drawCube(V3 p1, V3 p2, float w = 3.0){
+    float h=(p2-p1).norm();
     //cout << p1.transpose() << ", " << p2.transpose() << endl;
     vector<V3> v;
     v.push_back(V3(-w,-w,0)); v.push_back(V3(-w,w,0)); v.push_back(V3(w,w,0)); v.push_back(V3(w,-w,0));
@@ -121,6 +119,15 @@ void readSingleFrame(int frameIdx, Posture *posture){ // read specific frame inf
     int idx = 0;
     posture->q.clear();
     getPosture(bvh->getRootJoint(), posture, &idx);
+}
+
+vector<Posture> readMultiFrames(int startIdx, int endIdx){
+    vector<Posture> res;
+    FOR (i,startIdx, endIdx){
+        res.push_back(Posture());
+        readSingleFrame(i, &res[i-startIdx]);
+    }
+    return res;
 }
 
 void drawingBvh(JOINT* joint, V3 p, quater q){
