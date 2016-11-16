@@ -132,16 +132,17 @@ vector<Posture> readMultiFrames(int startIdx, int endIdx){
 
 void drawingBvh(JOINT* joint, V3 p, quater q){
     joint->q = quater();
+    float xPos=0.0, yPos=0.0, zPos=0.0;
     for (int i=0;i<joint->num_channels;i++){
         int channel = (int)joint->channels_order[i];
         if (channel == Xposition){
-            p(0) = bvh->motionData.data[motionDataIndex+i];
+            xPos = bvh->motionData.data[motionDataIndex+i];
         }
         if (channel == Yposition){
-            p(1) = bvh->motionData.data[motionDataIndex+i];
+            yPos = bvh->motionData.data[motionDataIndex+i];
         }
         if (channel == Zposition){
-            p(2) = bvh->motionData.data[motionDataIndex+i];
+            zPos = bvh->motionData.data[motionDataIndex+i];
         }
 
         if (channel == Xrotation){
@@ -158,6 +159,9 @@ void drawingBvh(JOINT* joint, V3 p, quater q){
         }
     }
     motionDataIndex += joint->num_channels;
+
+    //if (V3(xPos, yPos, zPos).norm()>1e-5) p = calc_rotate(joint->q, V3(xPos, yPos, zPos));
+    if (V3(xPos, yPos, zPos).norm()>1e-5) p = V3(xPos, yPos, zPos);
 
     quater nextQ = q * joint->q;
     V3 nextP = p + calc_rotate(q, joint->offset);

@@ -13,7 +13,8 @@ struct Posture{
 
         Posture ret = Posture(p,q);
         
-        ret.addTranslation(calc_rotate(q[0], rhs.p));
+        ret.addTranslation(calc_rotate(q[0], rhs.p)); // Rigid Transformation
+        // ret.p += rhs.p;
         for (int i=0;i<q.size();i++){
         	ret.addRotation(i, rhs.q[i]);
         }
@@ -25,7 +26,8 @@ struct Posture{
         Displace ret= Displace();
 
         quater temp = rhs.q[0];
-        ret.p = calc_rotate(temp.inverse(),p-rhs.p);
+        ret.p = calc_rotate(temp.inverse(),p-rhs.p); // Rigid Transformation
+        // ret.p = p - rhs.p; // Independent translation and rotation
 
         for (int i=0;i<q.size();i++){
         	quater temp = rhs.q[i];

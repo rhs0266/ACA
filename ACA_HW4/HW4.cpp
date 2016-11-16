@@ -204,19 +204,18 @@ void display() {
 
     makeGround();
 
+    // drawBvh(frame_idx);
 
-    Displace d = Walk[Walk.size()-1] - TL[0];
-    for (int i=1;i<d.q.size();i++) d.q[i]=V3(0, 0, 0);
 
     int idx = frame_idx % (Walk.size() + TL.size());
     if (idx<Walk.size()){
         current_posture = Walk[idx];
     }else{
-        current_posture = TL[idx - Walk.size()] + d;
+        current_posture = TL[idx - Walk.size()];
     }
 
     drawPosture(&current_posture);
-    drawPosture(&TL[frame_idx%TL.size()]);
+    drawPosture(&TL[frame_idx % TL.size()]);
 
     glutSwapBuffers();
 }
@@ -331,7 +330,32 @@ int main(int argc, char **argv) {
         bvh_load_upload(argv[1]);
         Walk = readMultiFrames(18,80);
         bvh_load_upload(argv[2]);
-        TL = readMultiFrames(0,132);
+        TL = readMultiFrames(87,129);
+
+        Displace d = Walk[Walk.size()-1] - TL[0];
+
+        // temporary fixation
+        float norm = d.q[0].norm();
+        d.q[0] = V3(0,-1,0)*norm;
+
+        d.p(1)=0;
+        for (int i=0;i<d.q.size();i++) d.q[i]=V3(0, 0, 0);
+
+        // cout << d.q[0].transpose() << endl;
+        // quater tq = EXP(d.q[0]);
+        // cout << tq.getTheta() << " / " << tq.getVec().transpose() << endl;
+
+        // TL[0] = TL[0] + d;
+
+        Posture TL0 = TL[0];
+        for (int i=0;i<TL.size();i++){
+            // Posture temp = TL[i];
+            // temp.p = calc_rotate(EXP(d.q[0]), temp.p-TL0.p) + TL0.p + (Walk[Walk.size()-1].p - TL[0].p);
+            // // temp.q[0] = temp.q[0] * EXP(d.q[0]);
+            // temp.q[0] = EXP(d.q[0]) * temp.q[0];
+            // TL[i]=temp;
+            TL[i] = TL[i] + d;
+        }
 
     }
     glutInit(&argc, argv);
