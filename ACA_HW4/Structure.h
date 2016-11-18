@@ -369,9 +369,6 @@ void setting(){
     motionDataIndex = 0;
 	jointRotationInitiation(bvh->getRootJoint());
 }
-position getEyePosition(){
-	return position(bvh->motionData.data[0],bvh->motionData.data[1],bvh->motionData.data[2]+500.0);
-}
 
 void InitiatingPosture(JOINT *joint, Posture *posture){
     posture->q.push_back(quater());

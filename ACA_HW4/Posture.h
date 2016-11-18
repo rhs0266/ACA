@@ -31,7 +31,7 @@ struct Posture{
 
         for (int i=0;i<q.size();i++){
         	quater temp = rhs.q[i];
-            ret.q.push_back(LOG(temp.inverse() * q[i])); // TODO LOG()
+            ret.q.push_back(LOG(temp.inverse() * q[i]));
         }
         return ret;
     }
@@ -41,7 +41,8 @@ struct Posture{
     void addRotation(int i, const V3& v){
         assert(0<=i && i<q.size());
         
-        q[i]=q[i]*EXP(v); // TODO EXP()
+        q[i]=q[i]*EXP(v);
+        // q[i]=EXP(v)*q[i];
     }
 };
 
@@ -90,4 +91,39 @@ void readFrame(JOINT *joint, float *motionData, int *idx) {
 		readFrame(child, motionData, idx);
 	}
 }
+
+float warpingFunction(float t){
+	return 2*t*t*t-3*t*t+1;
+}
+
+vector<Posture> MotionAlignment(vector<Posture> motion, Posture lastPosture){
+	vector<Posture> res = motion;
+	// cout << motion.size() << endl;
+	for (int i=res.size()-1;i>=0;i--) res[i].p-=res[0].p;
+	Displace D = lastPosture-res[0];
+	for (int i=1;i<D.q.size();i++) D.q[i] = V3(0,0,0);
+	D.p(1) = 0; // In-plane translation
+
+	float angle = D.q[0].norm();
+	// D.q[0] = V3(0,D.q[0](1),0);
+	quater dQ = geodesic(EXP(D.q[0]),quater(1,0,0,0));
+
+	for (int i=0;i<res.size();i++){
+		res[i].p = calc_rotate(dQ, res[i].p) + lastPosture.p;
+		// TL[i].q[0] = TL[i].q[0] * EXP(D.q[0]);
+		res[i].q[0] = dQ * res[i].q[0];
+	}
+	return res;
+}
+
+vector<Posture> MotionWarping(vector<Posture> motion, Posture lastPosture){
+	vector<Posture> res;
+	motion = MotionAlignment(motion, lastPosture);
+	Displace D = lastPosture - motion[0];
+	for (int i=1;i<motion.size();i++){
+		res.push_back(motion[i] + (D * warpingFunction((float)i/(float)(motion.size()-1))));
+	}
+	return res;
+}
+
 #endif

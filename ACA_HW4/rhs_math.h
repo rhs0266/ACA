@@ -94,6 +94,11 @@ struct quater{
     void print(){
         printf("%.5lf %.5lf %.5lf %.5lf\n",p[0],p[1],p[2],p[3]);
     }
+    float dot(quater q2){
+        float t=0.0;
+        FOR (i,0,3) t+=p[i]*q2.p[i];
+        return t;
+    }
     quater inverse(){
         return quater(p[0],-p[1],-p[2],-p[3]);
     }
@@ -144,6 +149,27 @@ struct quater{
         return p2;
     }
 };
+
+quater G(float t, quater q, V3 u){
+    return quater(cos(t),u*sin(t)) * q;
+}
+quater geodesic(quater qs, quater  q0, V3 u = V3(0,1,0)){
+    cout << "@ Geodesic\n";
+    cout << "qs = "; qs.print();
+    cout << "q0 = "; q0.print();
+    float ws = qs.p[0];
+    V3 vs = V3(qs.p[1],qs.p[2],qs.p[3]);
+    float w0 = q0.p[0];
+    V3 v0 = V3(q0.p[1],q0.p[2],q0.p[3]);
+    float a = ws*w0 + vs.dot(v0);
+    float b = ws*(u.dot(v0)) + w0*(vs.dot(u))+vs.dot(u.cross(v0)); cout << "a/b = " << a << "/" << b << endl;
+    float alpha = atan2(a,b); cout << "alpha = " << alpha << endl;
+
+    quater plus = G(-alpha+PI/2.0, q0, u); cout << "plus = "; plus.print();
+    quater minus = G(-alpha-PI/2.0, q0, u); cout << "minus = "; minus.print();
+    if (qs.dot(plus) > qs.dot(minus)) return plus;
+    return minus;
+}
 
 quater make_quater(float angle, position axis){
 	return quater(cos(angle/2), axis * sin(angle/2));

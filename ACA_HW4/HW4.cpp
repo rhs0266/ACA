@@ -40,13 +40,22 @@ quater Tot;
 V3 eye = V3(0.0f, 0.0f, 500.0f);
 V3 ori = V3(0.0f, 0.0f, 0.0f);
 float rot[3] = { 0.0f, 0.0f, 0.0f };
+Posture current_posture;
+vector<Posture> currentMotion, nextMotion;
+
+V3 getEyePosition(){
+	return current_posture.p + V3(0,100,500);
+}
 
 void loadGlobalCoord(){
     glLoadIdentity();
     V3 eye_new, ori_new, up_new;
-    eye_new = calc_rotate(Tot,eye) + translate;
-    ori_new = ori + translate;
-    up_new = calc_rotate(Tot, V3(0,1,0));
+    // eye_new = calc_rotate(Tot,eye) + translate;
+    eye_new = getEyePosition();
+    // ori_new = ori + translate;
+    ori_new = current_posture.p;
+    // up_new = calc_rotate(Tot, V3(0,1,0));
+    up_new = V3(0,1,0);
     gluLookAt(eye_new(0), eye_new(1), eye_new(2), ori_new(0), ori_new(1), ori_new(2), up_new(0), up_new(1), up_new(2));
 
     glMultMatrixd(rotMatrix);}
@@ -183,11 +192,10 @@ void glutMouse(int button, int state, int x, int y){
     }
     return;}
 
-Posture current_posture;
 vector<Posture> StoW, WtoS, Walk, TL, TR;
 
 void makeGround(){
-    drawCube(V3(0,-100,-100),V3(0,-100,-700),100);
+    drawCube(V3(0,-150,-100),V3(0,-150,-700),60);
 }
 
 void display() {
@@ -207,15 +215,27 @@ void display() {
     // drawBvh(frame_idx);
 
 
-    int idx = frame_idx % (Walk.size() + TL.size());
-    if (idx<Walk.size()){
-        current_posture = Walk[idx];
-    }else{
-        current_posture = TL[idx - Walk.size()];
+    // int idx = frame_idx % (Walk.size() + TL.size());
+    // if (idx<Walk.size()){
+    //     current_posture = Walk[idx];
+    // }else{
+    //     current_posture = TL[idx - Walk.size()];
+    // }
+
+    assert(currentMotion.size()>0);
+
+    int idx = frame_idx;
+    if (idx == currentMotion.size()){
+    	cout << idx << " out of " << currentMotion.size() << endl;
+    	currentMotion = MotionWarping(nextMotion, currentMotion[idx-1]);
+    	nextMotion = Walk;
+    	frame_idx = idx = 0;
     }
+    // idx = currentMotion.size()-1;
+    current_posture = currentMotion[idx];
 
     drawPosture(&current_posture);
-    drawPosture(&TL[frame_idx % TL.size()]);
+    // drawPosture(&TL[frame_idx % TL.size()]);
 
     glutSwapBuffers();
 }
@@ -230,6 +250,7 @@ void resize(int w, int h) {
     gluPerspective(fov, (GLfloat)w / (GLfloat)h, .1f, 500.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();}
+
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
     case 27:
@@ -264,7 +285,16 @@ void keyboard(unsigned char key, int x, int y) {
     case 'p':
         printf("current_frame = %d\n",frame_idx);
         break;
-
+    case 'n':
+    	// currentMotion = MotionWarping(Walk, current_posture);
+    	// frame_idx = 0;
+    	nextMotion = Walk;
+    	break;
+	case 'm':
+    	// currentMotion = MotionWarping(TL, current_posture);
+    	// frame_idx = 0;
+    	nextMotion = TL;
+    	break;
     case 'w': // 'w' view up translate
         translate = translate + calc_rotate(Tot, V3(0,-1,0));
         break;
@@ -328,36 +358,27 @@ int main(int argc, char **argv) {
         //setting();
 
         bvh_load_upload(argv[1]);
-        Walk = readMultiFrames(18,80);
+        Walk = readMultiFrames(18,18+33);
         bvh_load_upload(argv[2]);
-        TL = readMultiFrames(87,129);
+        TL = readMultiFrames(0,102);
 
-        Displace d = Walk[Walk.size()-1] - TL[0];
+        // cout << TL.size() << endl;
+        nextMotion = Walk;
 
-        // temporary fixation
-        float norm = d.q[0].norm();
-        d.q[0] = V3(0,-1,0)*norm;
-
-        d.p(1)=0;
-        for (int i=0;i<d.q.size();i++) d.q[i]=V3(0, 0, 0);
-
-        // cout << d.q[0].transpose() << endl;
-        // quater tq = EXP(d.q[0]);
-        // cout << tq.getTheta() << " / " << tq.getVec().transpose() << endl;
-
-        // TL[0] = TL[0] + d;
-
-        Posture TL0 = TL[0];
-        for (int i=0;i<TL.size();i++){
-            // Posture temp = TL[i];
-            // temp.p = calc_rotate(EXP(d.q[0]), temp.p-TL0.p) + TL0.p + (Walk[Walk.size()-1].p - TL[0].p);
-            // // temp.q[0] = temp.q[0] * EXP(d.q[0]);
-            // temp.q[0] = EXP(d.q[0]) * temp.q[0];
-            // TL[i]=temp;
-            TL[i] = TL[i] + d;
-        }
+        currentMotion = Walk;
 
     }
+// -0.99416 -0.04533 -0.08642 -0.04614
+//      res[0] : 0.99934 -0.00660 0.02221 0.02791
+
+    quater q1 = quater(0.99934,-0.00660,0.02221,0.02791);
+    // quater q2 = quater(-0.99416,-0.04533,-0.08642,-0.04614);
+    quater q2 = quater(0.99416,0.04533,0.08642,0.04614);
+    V3 minus = LOG(q1.inverse() * q2); cout << "q2 - q1 = " << minus.transpose() << endl;
+    cout << "EXP(q2-q1) = "; (EXP(minus)).print();
+    quater MINUS = geodesic(EXP(minus),quater(1,0,0,0)); MINUS.print();
+    quater q3 = q1 * MINUS; q3.print();
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);
