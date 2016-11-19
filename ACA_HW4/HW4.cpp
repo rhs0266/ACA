@@ -371,13 +371,13 @@ int main(int argc, char **argv) {
 // -0.99416 -0.04533 -0.08642 -0.04614
 //      res[0] : 0.99934 -0.00660 0.02221 0.02791
 
-    quater q1 = quater(0.99934,-0.00660,0.02221,0.02791);
-    // quater q2 = quater(-0.99416,-0.04533,-0.08642,-0.04614);
-    quater q2 = quater(0.99416,0.04533,0.08642,0.04614);
-    V3 minus = LOG(q1.inverse() * q2); cout << "q2 - q1 = " << minus.transpose() << endl;
-    cout << "EXP(q2-q1) = "; (EXP(minus)).print();
-    quater MINUS = geodesic(EXP(minus),quater(1,0,0,0)); MINUS.print();
-    quater q3 = q1 * MINUS; q3.print();
+    // quater q1 = quater(0.99934,-0.00660,0.02221,0.02791);
+    // // quater q2 = quater(-0.99416,-0.04533,-0.08642,-0.04614);
+    // quater q2 = quater(0.99416,0.04533,0.08642,0.04614);
+    // V3 minus = LOG(q1.inverse() * q2); cout << "q2 - q1 = " << minus.transpose() << endl;
+    // cout << "EXP(q2-q1) = "; (EXP(minus)).print();
+    // quater MINUS = geodesic(EXP(minus),quater(1,0,0,0)); MINUS.print();
+    // quater q3 = q1 * MINUS; q3.print();
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
