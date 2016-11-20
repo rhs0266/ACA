@@ -88,7 +88,6 @@ struct quater{
         p[0]=p0, p[1]=v.p[0], p[2]=v.p[1], p[3]=v.p[2];
     }
     quater(float p0, V3 v){
-        //v = v / v.norm();
         p[0]=p0, p[1]=v(0), p[2]=v(1), p[3]=v(2);
     }
     void print(){
@@ -107,10 +106,6 @@ struct quater{
     }
     quater operator*(quater const& rhs){
         quater c;
-        /*c.p[0] = p[0]*rhs.p[0] - p[1]*rhs.p[1] - p[2]*rhs.p[2] - p[3]*rhs.p[3];
-        c.p[1] = p[0]*rhs.p[1] + p[1]*rhs.p[0] + p[2]*rhs.p[3] - p[3]*rhs.p[2];
-        c.p[2] = p[0]*rhs.p[2] + p[2]*rhs.p[0] + p[3]*rhs.p[1] - p[1]*rhs.p[3];
-        c.p[3] = p[0]*rhs.p[3] + p[3]*rhs.p[0] + p[1]*rhs.p[2] - p[2]*rhs.p[1];*/
         position v1=position(p[1],p[2],p[3]);
         position v2=position(rhs.p[1],rhs.p[2],rhs.p[3]);
         float w1=p[0], w2=rhs.p[0];
@@ -140,7 +135,9 @@ struct quater{
         return m;
     }
     float getTheta(){
-        float t = atan2(sqrt(1-p[0]*p[0]),p[0]) * 2;
+        float temp = 1-p[0]*p[0];
+        if (temp<0.0) temp=0.0;
+        float t = atan2(sqrt(temp),p[0]) * 2;
         return t;
     }
     V3 getVec(){
@@ -154,19 +151,16 @@ quater G(float t, quater q, V3 u){
     return quater(cos(t),u*sin(t)) * q;
 }
 quater geodesic(quater qs, quater  q0, V3 u = V3(0,1,0)){
-    cout << "@ Geodesic\n";
-    cout << "qs = "; qs.print();
-    cout << "q0 = "; q0.print();
     float ws = qs.p[0];
     V3 vs = V3(qs.p[1],qs.p[2],qs.p[3]);
     float w0 = q0.p[0];
     V3 v0 = V3(q0.p[1],q0.p[2],q0.p[3]);
     float a = ws*w0 + vs.dot(v0);
-    float b = ws*(u.dot(v0)) + w0*(vs.dot(u))+vs.dot(u.cross(v0)); cout << "a/b = " << a << "/" << b << endl;
-    float alpha = atan2(a,b); cout << "alpha = " << alpha << endl;
+    float b = ws*(u.dot(v0)) + w0*(vs.dot(u))+vs.dot(u.cross(v0));
+    float alpha = atan2(a,b);
 
-    quater plus = G(-alpha+PI/2.0, q0, u); cout << "plus = "; plus.print();
-    quater minus = G(-alpha-PI/2.0, q0, u); cout << "minus = "; minus.print();
+    quater plus = G(-alpha+PI/2.0, q0, u);
+    quater minus = G(-alpha-PI/2.0, q0, u);
     if (qs.dot(plus) > qs.dot(minus)) return plus;
     return minus;
 }
@@ -174,11 +168,6 @@ quater geodesic(quater qs, quater  q0, V3 u = V3(0,1,0)){
 quater make_quater(float angle, position axis){
 	return quater(cos(angle/2), axis * sin(angle/2));
 }
-// position calc_rotate(quater Q, position _P){
-//     quater P = quater(0, _P);
-//     P=(Q*P)*Q.inverse();
-//     return position(P.p[1], P.p[2], P.p[3]);
-// }
 V3 calc_rotate(quater Q, V3 _P){
     quater P = quater(0, _P);
     P=(Q*P)*Q.inverse();

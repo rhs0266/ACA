@@ -37,24 +37,35 @@ matrix rot_mat;
 quater Tot;
 
 /* vectors that makes the rotation and translation of the cube */
-V3 eye = V3(0.0f, 0.0f, 500.0f);
+V3 eye = V3(0.0f, 100.0f, 500.0f);
 V3 ori = V3(0.0f, 0.0f, 0.0f);
 float rot[3] = { 0.0f, 0.0f, 0.0f };
 Posture current_posture;
 vector<Posture> currentMotion, nextMotion;
 
-V3 getEyePosition(){
-	return current_posture.p + V3(0,100,500);
-}
+#define CAM_FRONT 0
+#define CAM_UP 1
+#define CAM_FIXED 0
+#define CAM_FREE 1
+int viewDirection = CAM_UP, camera = CAM_FIXED;
 
 void loadGlobalCoord(){
     glLoadIdentity();
     V3 eye_new, ori_new, up_new;
-    // eye_new = calc_rotate(Tot,eye) + translate;
-    eye_new = getEyePosition();
-    // ori_new = ori + translate;
-    ori_new = current_posture.p;
-    // up_new = calc_rotate(Tot, V3(0,1,0));
+    
+    if (camera == CAM_FIXED){
+        if (viewDirection == CAM_UP) eye = current_posture.p + V3(0,800,10);
+        else eye = current_posture.p + V3(0,100,500);
+        ori = current_posture.p;
+        translate = V3(0,0,0);
+    }
+    else{
+        eye = eye + translate;
+        ori = ori + translate;
+        translate = V3(0,0,0);
+    }
+    eye_new = eye;
+    ori_new = ori;
     up_new = V3(0,1,0);
     gluLookAt(eye_new(0), eye_new(1), eye_new(2), ori_new(0), ori_new(1), ori_new(2), up_new(0), up_new(1), up_new(2));
 
@@ -192,10 +203,19 @@ void glutMouse(int button, int state, int x, int y){
     }
     return;}
 
-vector<Posture> StoW, WtoS, Walk, TL, TR;
+#define STOP 0
+#define RF 1
+#define AVG 0
+#define SLOW 1
+vector<Posture> StoW, WtoS, Walk, Stop;
+vector<Posture> slowStoW, slowWtoS, slowWalk;
+vector<Posture> TL_45, TL_90, TL_135, TL_180;
+vector<Posture> TR_45, TR_90, TR_135, TR_180;
+vector<Posture> Jump, HighJump;
+int state = 0, speed = 0;
 
 void makeGround(){
-    drawCube(V3(0,-150,-100),V3(0,-150,-700),60);
+    drawCube(V3(0,-100,-15),V3(0,-100,15),15);
 }
 
 void display() {
@@ -212,23 +232,15 @@ void display() {
 
     makeGround();
 
-    // drawBvh(frame_idx);
-
-
-    // int idx = frame_idx % (Walk.size() + TL.size());
-    // if (idx<Walk.size()){
-    //     current_posture = Walk[idx];
-    // }else{
-    //     current_posture = TL[idx - Walk.size()];
-    // }
-
     assert(currentMotion.size()>0);
 
     int idx = frame_idx;
     if (idx == currentMotion.size()){
-    	cout << idx << " out of " << currentMotion.size() << endl;
     	currentMotion = MotionWarping(nextMotion, currentMotion[idx-1]);
-    	nextMotion = Walk;
+        if (state == STOP) nextMotion = Stop;
+        else if (state == RF)
+            if (speed == AVG) nextMotion = Walk;
+            else nextMotion = slowWalk;
     	frame_idx = idx = 0;
     }
     // idx = currentMotion.size()-1;
@@ -240,7 +252,7 @@ void display() {
     glutSwapBuffers();
 }
 
-int tempFlag=0;
+int moveFlag=1;
 void resize(int w, int h) {
     width = w;
     height = h;
@@ -257,44 +269,66 @@ void keyboard(unsigned char key, int x, int y) {
         fprintf(out,"Thank you.\n");
         exit(0);
         break;
-    case ' ': // spacebar for re//setting view
-        eye=V3(0.0f,0.0f,100.0f);
-        ori=V3(0.0f,0.0f,0.0f);
-        rot[0]=0.0f; rot[1]=0.0f; rot[2]=0.0f;
-        translate = V3(0,0,0);
-        fov=45;
-        Tot=quater();
-        break;
 
     case '1':
         drawType = 3 - drawType;
         break;
+    case ' ':
+        moveFlag = 1 - moveFlag;
+        break;
+
     case '2':
-        tempFlag = 1 - tempFlag;
+        if (state == RF) nextMotion = TL_45;
         break;
-    case 'i':
-        int target_frame; scanf("%d",&target_frame);
-        readSingleFrame(target_frame, &current_posture);
+    case '3':
+        if (state == RF) nextMotion = TL_90;
         break;
-    case 'h':
-        frame_idx--;
+    case '4':
+        if (state == RF) nextMotion = TL_135;
         break;
-    case 'l':
-        frame_idx++;
+    case '5':
+        if (state == RF) nextMotion = TL_180;
         break;
-    case 'p':
-        printf("current_frame = %d\n",frame_idx);
+    case '6':
+        if (state == RF) nextMotion = TR_45;
         break;
-    case 'n':
-    	// currentMotion = MotionWarping(Walk, current_posture);
-    	// frame_idx = 0;
-    	nextMotion = Walk;
-    	break;
-	case 'm':
-    	// currentMotion = MotionWarping(TL, current_posture);
-    	// frame_idx = 0;
-    	nextMotion = TL;
-    	break;
+    case '7':
+        if (state == RF) nextMotion = TR_90;
+        break;
+    case '8':
+        if (state == RF) nextMotion = TR_135;
+        break;
+    case '9':
+        if (state == RF) nextMotion = TR_180;
+        break;
+    case '0':
+        speed = 1 - speed;
+        break;
+    case '\'':
+        if (state == RF){
+            if (speed == AVG) nextMotion = WtoS;
+            else nextMotion = slowWtoS;
+            state = STOP;
+        }else{
+            if (speed == AVG) nextMotion = StoW;
+            else nextMotion = slowStoW;
+            state = RF;
+        }
+        break;
+
+    case 'v':
+        viewDirection = 1 - viewDirection;
+        break;
+    case 'c':
+        camera = 1 - camera;
+        break;
+
+    case 'j':
+        if (state == STOP) nextMotion = Jump;
+        break;
+    case 'k':
+        if (state == STOP) nextMotion = HighJump;
+        break;
     case 'w': // 'w' view up translate
         translate = translate + calc_rotate(Tot, V3(0,-1,0));
         break;
@@ -325,7 +359,7 @@ void keyboard(unsigned char key, int x, int y) {
 unsigned timeStep = 30;
 void Timer(int unused)
 {
-    if (tempFlag==1) frame_idx++;
+    if (moveFlag==1) frame_idx++;
     glutPostRedisplay();
     glutTimerFunc(timeStep, Timer, 0);
 }
@@ -340,10 +374,14 @@ void ManualPrint(){
     fprintf(out,"[ d ] : move right\n");
     fprintf(out,"[ w ] : move up\n");
     fprintf(out,"------------------\n");
-    fprintf(out,"[m | , | . | / ] : move left hand of human object. each command corresponds to goal positions\n");
-    fprintf(out,"[c | v | b | n ] : move right hand of human object. each command corresponds to goal positions\n");
-    fprintf(out,"[k | l | ; | ' ] : move left toes of human object. each command corresponds to goal positions\n");
-    fprintf(out,"[f | g | h | j ] : move right toes of human object. each command corresponds to goal positions\n");
+    fprintf(out,"[2 | 3 | 4 | 5 ] : turn left 45, 90, 135, 180 degrees. works if it is walking\n");
+    fprintf(out,"[6 | 7 | 8 | 9 ] : turn right 45, 90, 135, 180 degrees. works if it is walking\n");
+    fprintf(out,"[0] : convert speed type between average and slow walk\n");
+    fprintf(out,"[j | k] : normal and high jump. works if it stops\n");
+    fprintf(out,"['] : convert stop or walk\n");
+    fprintf(out,"[v] : convert view direction\n");
+    fprintf(out,"[c] : convert camera fixation\n");
+    fprintf(out,"[space bar] : pause or resume\n");
     fprintf(out,"------------------\n");
     fprintf(out,"[ [ ] : dolly in,  exists maximum range\n");
     fprintf(out,"[ ] ] : dolly out, exists maximum range\n");
@@ -351,34 +389,61 @@ void ManualPrint(){
     fprintf(out,"[ esc ] : exit program.\n");
 }
 
+void MotionClipSetting(){
+    //stop
+    bvh_load_upload("walk_fast_stright.bvh");
+    StoW = readMultiFrames(68, 108);
+    Stop = readMultiFrames(52, 58);
+    for (int i=Stop.size()-1;i>=0;i--) Stop.push_back(Stop[i]);
+
+    // turn left
+    bvh_load_upload("walk_normal_left_45.bvh");
+    TL_45 = readMultiFrames(399, 438);
+    bvh_load_upload("walk_normal_left_90.bvh");
+    TL_90 = readMultiFrames(116, 163);
+    bvh_load_upload("walk_normal_left_135.bvh");
+    TL_135 = readMultiFrames(795, 878);
+    bvh_load_upload("walk_normal_left_180.bvh");
+    TL_180 = readMultiFrames(108, 186);
+
+    // turn right
+    bvh_load_upload("walk_normal_right_45.bvh");
+    TR_45 = readMultiFrames(66, 141);
+    bvh_load_upload("walk_normal_right_90.bvh");
+    TR_90 = readMultiFrames(75, 153);
+    bvh_load_upload("walk_normal_right_135.bvh");
+    TR_135 = readMultiFrames(79, 159);
+    bvh_load_upload("walk_normal_right_180.bvh");
+    TR_180 = readMultiFrames(59, 174);
+
+    // Walk, WtoS
+    bvh_load_upload("16_15_walk.bvh");
+    Walk = readMultiFrames(18,18+33);
+    bvh_load_upload("16_33_slow_walk,_stop.bvh");
+    WtoS = readMultiFrames(38, 60);
+
+    // jump
+    bvh_load_upload("16_02_jump.bvh");
+    Jump = readMultiFrames(31, 83);
+    bvh_load_upload("16_03_high_jump.bvh");
+    HighJump = readMultiFrames(18, 98);
+    
+    // slow walk
+    bvh_load_upload("walk_slow_stright.bvh");
+    slowStoW = readMultiFrames(320, 344);
+    slowWalk = readMultiFrames(344, 396);
+    slowWtoS = readMultiFrames(446, 496);
+}
+
 int main(int argc, char **argv) {
     ManualPrint();
-    if (argc>=3){
-        //InitialPosutre(&current_posture);
-        //setting();
+    {
+        MotionClipSetting();
 
-        bvh_load_upload(argv[1]);
-        Walk = readMultiFrames(18,18+33);
-        bvh_load_upload(argv[2]);
-        TL = readMultiFrames(0,102);
-
-        // cout << TL.size() << endl;
-        nextMotion = Walk;
-
-        currentMotion = Walk;
-
+        state = STOP;
+        nextMotion = Stop;
+        currentMotion = Stop;
     }
-// -0.99416 -0.04533 -0.08642 -0.04614
-//      res[0] : 0.99934 -0.00660 0.02221 0.02791
-
-    // quater q1 = quater(0.99934,-0.00660,0.02221,0.02791);
-    // // quater q2 = quater(-0.99416,-0.04533,-0.08642,-0.04614);
-    // quater q2 = quater(0.99416,0.04533,0.08642,0.04614);
-    // V3 minus = LOG(q1.inverse() * q2); cout << "q2 - q1 = " << minus.transpose() << endl;
-    // cout << "EXP(q2-q1) = "; (EXP(minus)).print();
-    // quater MINUS = geodesic(EXP(minus),quater(1,0,0,0)); MINUS.print();
-    // quater q3 = q1 * MINUS; q3.print();
-
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width , height);

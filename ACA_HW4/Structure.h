@@ -30,7 +30,6 @@ void drawLine(V3 p1, V3 p2){
 
 void drawCube(V3 p1, V3 p2, float w = 3.0){
     float h=(p2-p1).norm();
-    //cout << p1.transpose() << ", " << p2.transpose() << endl;
     vector<V3> v;
     v.push_back(V3(-w,-w,0)); v.push_back(V3(-w,w,0)); v.push_back(V3(w,w,0)); v.push_back(V3(w,-w,0));
     v.push_back(V3(-w,-w,h)); v.push_back(V3(-w,w,h)); v.push_back(V3(w,w,h)); v.push_back(V3(w,-w,h));
@@ -40,8 +39,6 @@ void drawCube(V3 p1, V3 p2, float w = 3.0){
     if (V3(0,0,1).cross(t2).norm()>1e-3) axis=V3(0,0,1).cross(t2);
     else axis=V3(0,0,1);
     float angle = acos(V3(0,0,1).dot(t));
-    // cout << t.transpose() << ", " << t2.transpose() << ", " << (axis/axis.norm()).transpose() << endl;
-    // cout << angle << endl;
     quater Q = quater(cos(angle/2), axis/axis.norm()*sin(angle/2));
     for (int i=0;i<8;i++){
         v[i]=calc_rotate(Q,v[i]);
@@ -130,6 +127,14 @@ vector<Posture> readMultiFrames(int startIdx, int endIdx){
     return res;
 }
 
+vector<Posture> inverseFrames(vector<Posture> given){
+    vector<Posture> res;
+    for (int i=given.size()-1;i>=0;i--){
+        res.push_back(given[i]);
+    }
+    return res;
+}
+
 void drawingBvh(JOINT* joint, V3 p, quater q){
     joint->q = quater();
     float xPos=0.0, yPos=0.0, zPos=0.0;
@@ -160,7 +165,6 @@ void drawingBvh(JOINT* joint, V3 p, quater q){
     }
     motionDataIndex += joint->num_channels;
 
-    //if (V3(xPos, yPos, zPos).norm()>1e-5) p = calc_rotate(joint->q, V3(xPos, yPos, zPos));
     if (V3(xPos, yPos, zPos).norm()>1e-5) p = V3(xPos, yPos, zPos);
 
     quater nextQ = q * joint->q;
@@ -174,8 +178,7 @@ void drawingBvh(JOINT* joint, V3 p, quater q){
             drawCube(p, nextP);
         }
 	}
-    //else cout << joint->offset.transpose() << " / " << nextP.transpose() << endl;
-	for (auto &child : joint->children){
+    for (auto &child : joint->children){
 		drawingBvh(child, nextP, nextQ);
 	}
 }

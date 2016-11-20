@@ -1,0 +1,20 @@
+//stop
+walk_fast_stright.bvh / stop to RF = 68 to 108 / stopping = 48 to 68
+
+//walk_left
+walk_normal_left_45.bvh / RF to RF = 399 to 438
+walk_normal_left_90.bvh / RF to RF = 116 to 163
+walk_normal_left_135.bvh / RF to RF = 795 to 878
+walk_normal_left_180.bvh / RF to RF = 108 to 186
+
+//walk_right
+walk_normal_right_45.bvh / RF to RF = 66 to 141
+walk_normal_right_90.bvh / RF to RF = 75 to 153
+walk_normal_right_135.bvh / RF to RF = 79 to 159
+walk_normal_right_180.bvh / RF to RF = 59 to 174
+
+
+//run
+16_55_run.bvh / stop to RF = 0 rto 18 / run = 18 to 36
+16_57_run&jog,_sudden_stop.bvh / RF to stop
+
