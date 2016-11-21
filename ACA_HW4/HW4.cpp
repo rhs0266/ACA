@@ -205,6 +205,7 @@ void glutMouse(int button, int state, int x, int y){
 
 #define STOP 0
 #define RF 1
+#define ShortStep 2
 #define AVG 0
 #define SLOW 1
 vector<Posture> StoW, WtoS, Walk, Stop;
@@ -241,6 +242,8 @@ void display() {
         else if (state == RF)
             if (speed == AVG) nextMotion = Walk;
             else nextMotion = slowWalk;
+        else if (state == ShortStep)
+            nextMotion = WtoS, state = STOP;
     	frame_idx = idx = 0;
     }
     // idx = currentMotion.size()-1;
@@ -329,6 +332,12 @@ void keyboard(unsigned char key, int x, int y) {
     case 'k':
         if (state == STOP) nextMotion = HighJump;
         break;
+    case 'l':
+        if (state==STOP){
+            state = ShortStep;
+            nextMotion = StoW;
+        }
+        break;
     case 'w': // 'w' view up translate
         translate = translate + calc_rotate(Tot, V3(0,-1,0));
         break;
@@ -378,6 +387,7 @@ void ManualPrint(){
     fprintf(out,"[6 | 7 | 8 | 9 ] : turn right 45, 90, 135, 180 degrees. works if it is walking\n");
     fprintf(out,"[0] : convert speed type between average and slow walk\n");
     fprintf(out,"[j | k] : normal and high jump. works if it stops\n");
+    fprintf(out,"[l] : short step. works if it stops");
     fprintf(out,"['] : convert stop or walk\n");
     fprintf(out,"[v] : convert view direction\n");
     fprintf(out,"[c] : convert camera fixation\n");
